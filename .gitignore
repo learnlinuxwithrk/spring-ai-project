@@ -1,4 +1,4 @@
-/projects/rag_app/target/
+/projects/*/target/
 *.class
 *.jar
 *.war
