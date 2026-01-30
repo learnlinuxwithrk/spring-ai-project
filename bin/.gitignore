@@ -1,0 +1,12 @@
+/projects/rag_app/target/
+*.class
+*.jar
+*.war
+*.iml
+/.idea/
+/.vscode/
+.gradle/
+build/
+.settings/
+.classpath
+.project

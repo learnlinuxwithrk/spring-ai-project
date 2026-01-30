@@ -1,76 +1,154 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Professional Chatbot</title>
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.2/css/bootstrap.min.css}">
-    <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
-    <script th:src="@{/webjars/bootstrap/5.3.2/js/bootstrap.bundle.min.js}"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ministry-Chatbot</title>
+<style>
+    /* Reset & body */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #FAF9F6; display: flex; justify-content: center; align-items: center; height: 100vh; }
 
-    <style>
-        body { background: #f5f5f5; }
-        .chat-container { max-width: 600px; margin: 50px auto; background: white; border-radius: 12px;
-                          box-shadow: 0 0 15px rgba(0,0,0,0.1); display: flex; flex-direction: column;
-                          height: 80vh; overflow: hidden; }
-        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; }
-        .message { margin-bottom: 15px; display: flex; align-items: flex-start; }
-        .message.user .bubble { background: #007bff; color: white; margin-left: auto; }
-        .message.bot .bubble { background: #e9ecef; color: #333; margin-right: auto; }
-        .bubble { padding: 10px 15px; border-radius: 15px; max-width: 70%; word-wrap: break-word; }
-        .chat-input { display: flex; padding: 10px; border-top: 1px solid #ddd; }
-        .chat-input input { flex: 1; padding: 10px 15px; border-radius: 25px; border: 1px solid #ddd; }
-        .chat-input button { margin-left: 10px; border-radius: 25px; }
-    </style>
+    /* Main container */
+    .chat-container {
+        width: 90%;
+        max-width: 800px;
+        height: 90vh;
+        background: #fff;
+        padding: 30px 25px 40px;
+        border-radius: 15px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    /* Header text */
+    .chat-container h1 {
+        font-weight: 600;
+        font-size: 2rem;
+        color: #333;
+        text-align: center;
+    }
+
+    /* Chat area */
+    .chat-area {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding-right: 5px;
+    }
+
+    .chat-bubble {
+        padding: 12px 18px;
+        border-radius: 20px;
+        max-width: 75%;
+        word-wrap: break-word;
+        font-size: 1rem;
+    }
+
+    .chat-bubble.user {
+        background: #DCF8C6;
+        align-self: flex-end;
+        border-bottom-right-radius: 0;
+    }
+
+    .chat-bubble.bot {
+        background: #F1F0F0;
+        align-self: flex-start;
+        border-bottom-left-radius: 0;
+    }
+
+    /* Chat input */
+    .chat-input {
+        display: flex;
+        gap: 10px;
+    }
+
+    .chat-input input {
+        flex: 1;
+        padding: 15px 20px;
+        border-radius: 25px;
+        border: 1px solid #ccc;
+        font-size: 1.1rem;
+        outline: none;
+    }
+
+    .chat-input button {
+        padding: 15px 20px;
+        border: none;
+        border-radius: 25px;
+        background: #F29279;
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: 0.2s;
+        box-shadow: 0 5px 15px rgba(242, 146, 121, 0.5);
+    }
+
+    .chat-input button:hover {
+        background: #e06a4f;
+        box-shadow: 0 5px 15px rgba(224, 106, 79, 0.5);
+    }
+</style>
 </head>
 <body>
+
 <div class="chat-container">
-    <div class="chat-messages" id="chatMessages"></div>
+    <h1>How can I help you today?</h1>
+
+    <div class="chat-area" id="chatArea"></div>
+
     <div class="chat-input">
-        <input type="text" id="userInput" placeholder="Type a message..." />
-        <button class="btn btn-primary" id="sendBtn">Send</button>
+        <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter'){sendMessage();}">
+        <button onclick="sendMessage()">➤</button>
     </div>
 </div>
 
 <script>
-function addMessage(content, sender) {
-    let bubbleClass = sender === 'user' ? 'user' : 'bot';
-    $('#chatMessages').append(
-        `<div class="message ${bubbleClass}"><div class="bubble">${content}</div></div>`
-    );
-    $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
-}
+    const chatArea = document.getElementById('chatArea');
+    let eventSource = null;
 
-function streamMessage(url) {
-    let botBubble = $('<div class="message bot"><div class="bubble"></div></div>');
-    $('#chatMessages').append(botBubble);
+    function appendMessage(text, sender) {
+        const div = document.createElement('div');
+        div.className = `chat-bubble ${sender}`;
+        div.textContent = text;
+        chatArea.appendChild(div);
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
 
-    const eventSource = new EventSource(url);
+    function sendMessage() {
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if(!text) return;
+        appendMessage(text, 'user');
+        input.value = '';
 
-    eventSource.onmessage = function(event) {
-        botBubble.find('.bubble').append(event.data + " "); // stream word by word
-        $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
-    };
+        if(eventSource) eventSource.close();
 
-    eventSource.onerror = function() {
-        eventSource.close();
-        botBubble.find('.bubble').append(" [Error receiving response]");
-    };
-}
+        const encoded = encodeURIComponent(text);
+        const url = `/chatme?q=${encoded}`;
+        eventSource = new EventSource(url);
 
-function sendMessage() {
-    let message = $('#userInput').val().trim();
-    if (!message) return;
+        let botText = '';
+        const botDiv = document.createElement('div');
+        botDiv.className = 'chat-bubble bot';
+        chatArea.appendChild(botDiv);
 
-    addMessage(message, 'user');
-    $('#userInput').val('');
+        eventSource.onmessage = function(event) {
+            botText += event.data + ' ';
+            botDiv.textContent = botText;
+            chatArea.scrollTop = chatArea.scrollHeight;
+        };
 
-    streamMessage('/answerme?q=' + encodeURIComponent(message));
-}
-
-$('#sendBtn').click(sendMessage);
-$('#userInput').keypress(function(e) {
-    if (e.which === 13) sendMessage();
-});
+        eventSource.onerror = function() {
+            eventSource.close();
+        };
+    }
 </script>
+
 </body>
 </html>

@@ -1,69 +1,142 @@
 package com.spring.ai.firstproject.controllers;
 
-import java.time.Duration;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import com.spring.ai.firstproject.service.ChatService;
-
-import reactor.core.publisher.Flux;
+import com.spring.ai.firstproject.service.PdfService;
 
 @Controller
 public class HomeController {
 
     private final ChatService chatService;
-
-    public HomeController(ChatService chatService) {
-        this.chatService = chatService;
-    }
-
-    // Serve chat page
-    @GetMapping("/home")
-    public String chatPage() {
-        return "chat"; // Thymeleaf template
-    }
-
-//    // Stream chat responses
-//    @GetMapping(value = "/stream-chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-//    public ResponseEntity<Flux<String>> streamChat(
-//            @RequestParam(value = "q", required = false) String query
-//    ) {
-//        if (query == null || query.isBlank()) {
-//            return ResponseEntity.ok(Flux.just("Please type a message."));
-//        }
-//
-//        // Stream response word by word
-//        return ResponseEntity.ok(
-//                chatService.streamChat(query)
-//                        .map(chunk -> chunk.replace("data:", "").trim()) // remove unwanted prefix
-//                        .filter(s -> !s.isEmpty())
-//        );
-//    }
     
-    @GetMapping(path = "/answerme", produces = "text/event-stream")
-    public Flux<ServerSentEvent<String>> streamChat(@RequestParam("q") String q) {
+    private final PdfService pdfService;
 
-        // Get the bot response as a plain string
-        String botResponse = chatService.chatTemplate(q); // must return String
+    public HomeController(ChatService chatService,PdfService pdfService) {
+        this.chatService = chatService;
+        this.pdfService= pdfService;
+    }
 
-        // Split response into words for streaming
+    @GetMapping("/")
+    public String chatPage() {
+        return "chat";
+    }
+
+    @GetMapping("/answerme")
+    public ResponseEntity<StreamingResponseBody> streamChat(@RequestParam("q") String q) {
+
+        String botResponse = chatService.chatTemplate(q); // Must return String
+        
+     
         List<String> words = Arrays.asList(botResponse.split(" "));
 
-        // Stream each word with a tiny delay
-        return Flux.fromIterable(words)
-                   .delayElements(Duration.ofMillis(100))
-                   .map(word -> ServerSentEvent.builder(word).build());
+        StreamingResponseBody stream = outputStream -> {
+            try {
+                for (String word : words) {
+                    // SSE format: data: word\n\n
+                    String sseData = "data: " + word + "\n\n";
+                    outputStream.write(sseData.getBytes());
+                    outputStream.flush();
+                    Thread.sleep(100); // small delay for streaming effect
+                }
+            } catch (InterruptedException | IOException e) {
+                e.printStackTrace();
+            }
+        };
+
+        return ResponseEntity.ok()
+                .header("Content-Type", "text/event-stream")
+                .body(stream);
     }
+    
+//    @PostMapping("/upload-pdf")
+//    public ResponseEntity<String> uploadPdf(
+//            @RequestParam("file") MultipartFile file) throws IOException {
 //
-//  @GetMapping("/answerme")
-//  public ResponseEntity<String> chat(
-//          @RequestParam(value = "q", required = true) String q) {
-//      return ResponseEntity.ok(chatService.chatTemplate(q));
-//  }
+//        pdfService.uploadPdf(file);
+//        return ResponseEntity.ok("PDF indexed successfully");
+//    }
+
+    
+    
+    //Rest API to get response
+    
+//    @PostMapping("/chatme")
+//    public ResponseEntity<String> getResponse(@RequestParam("q") String userQuery){
+//        return ResponseEntity.ok(chatService.getResponse(userQuery));
+//    }
+//    
+    
+    @GetMapping("/chatme")
+    public ResponseEntity<StreamingResponseBody> streamChatMe(@RequestParam("q") String userQuery) {
+
+        String botResponse = chatService.getResponse(userQuery);
+
+        System.out.println("botResponse " + botResponse);
+
+        // Split by newline instead of space
+        List<String> lines = Arrays.asList(botResponse.split("\\r?\\n"));
+
+        StreamingResponseBody stream = outputStream -> {
+            try {
+                for (String line : lines) {
+                    String sseData = "data: " + line + "\n\n";
+                    outputStream.write(sseData.getBytes());
+                    outputStream.flush();
+                    Thread.sleep(50); // Optional delay for "streaming" effect
+                }
+                // Signal end of stream
+                String done = "event: done\ndata: \n\n";
+                outputStream.write(done.getBytes());
+                outputStream.flush();
+            } catch (InterruptedException | IOException e) {
+                e.printStackTrace();
+            }
+        };
+
+        return ResponseEntity.ok()
+                .header("Content-Type", "text/event-stream")
+                .body(stream);
+    }
+
+    @GetMapping("/chatmeold")
+    public ResponseEntity<StreamingResponseBody> streamChatMeOLD(@RequestParam("q") String userQuery) {
+
+        String botResponse = chatService.getResponse(userQuery);
+
+        System.out.println("botResponse "+botResponse);
+        List<String> words = Arrays.asList(botResponse.split(" "));
+
+        StreamingResponseBody stream = outputStream -> {
+            try {
+                for (String word : words) {
+                    String sseData = "data: " + word + "\n\n";
+                    outputStream.write(sseData.getBytes());
+                    outputStream.flush();
+                    Thread.sleep(50);
+                }
+                String done = "event: done\ndata: \n\n";
+                outputStream.write(done.getBytes());
+                outputStream.flush();
+            } catch (InterruptedException | IOException e) {
+                e.printStackTrace();
+            }
+        };
+
+        return ResponseEntity.ok()
+                .header("Content-Type", "text/event-stream")
+//                .header("Cache-Control", "no-cache")
+                .body(stream);
+    }
+
+
+
 }

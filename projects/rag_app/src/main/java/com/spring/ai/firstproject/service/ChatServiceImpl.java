@@ -9,6 +9,10 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
+import org.springframework.ai.rag.preretrieval.query.expansion.MultiQueryExpander;
+import org.springframework.ai.rag.preretrieval.query.transformation.RewriteQueryTransformer;
+import org.springframework.ai.rag.preretrieval.query.transformation.TranslationQueryTransformer;
+import org.springframework.ai.rag.retrieval.join.ConcatenationDocumentJoiner;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -121,6 +125,80 @@ public class ChatServiceImpl implements ChatService {
 
 
     }
+    
+    @Override
+    public String getResponse(String userQuery) {
+    	
+    	var advisor = RetrievalAugmentationAdvisor.builder()
+    	        .queryTransformers(
+    	                RewriteQueryTransformer.builder()
+    	                        .chatClientBuilder(chatClient.mutate().clone())
+    	                        .build()
+    	        )
+    	        .documentRetriever(
+    	                VectorStoreDocumentRetriever.builder()
+    	                        .vectorStore(vectorStore)
+    	                        .topK(40)
+    	                        .similarityThreshold(0.15)
+    	                        .build()
+    	        )
+    	        .documentJoiner(new ConcatenationDocumentJoiner())
+    	        .queryAugmenter(ContextualQueryAugmenter.builder().build())
+    	        .documentPostProcessors()
+    	        .build();
+
+        return chatClient
+                .prompt()
+                .system("""
+                        You are a coding assistant.
+                        Answer ONLY using information from the DOCUMENTS.
+                        Use EXACT column names as they appear in the DOCUMENTS.
+                        Do NOT rename, shorten, merge, or paraphrase labels.
+                        Output format must be:
+                        <Exact Column Name>: <Value>
+                        If data is not present, respond with:
+                        "This query is not in my database."
+                    """)
+                .advisors(advisor)
+                .user(userQuery)
+                .call()
+                .content();
+    }
+//
+//        var advisor = RetrievalAugmentationAdvisor.builder()
+//
+//                .queryTransformers(
+//                        RewriteQueryTransformer.builder()
+//                                .chatClientBuilder(chatClient.mutate().clone())
+//                                .build(),
+//                        TranslationQueryTransformer.builder().chatClientBuilder(chatClient.mutate().clone()).targetLanguage("english").build()
+//
+//                )
+//                .queryExpander(MultiQueryExpander.builder().chatClientBuilder(chatClient.mutate().clone()).numberOfQueries(3).build())
+//                .documentRetriever(
+//                        VectorStoreDocumentRetriever.builder()
+//                                .vectorStore(vectorStore)
+//                                .topK(3)
+//                                .similarityThreshold(0.3)
+//                                .build()
+//                )
+//                .documentJoiner(new ConcatenationDocumentJoiner())
+//                .queryAugmenter(ContextualQueryAugmenter.builder().build())
+////                .documentPostProcessors()
+//
+//
+//                .build();
+
+
+        //actual call to llm
+
+//        return chatClient
+//                .prompt()
+//                .advisors(advisor)
+//                .user(userQuery)
+//                .call()
+//                .content();
+//    }
 
 
 }

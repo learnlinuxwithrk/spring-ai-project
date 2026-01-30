@@ -12,5 +12,7 @@ public interface ChatService {
     Flux<String> streamChat(String query);
 
     void saveData(List<String> list);
+    
+    String getResponse(String userQuery);
 
 }
