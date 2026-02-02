@@ -3,6 +3,7 @@ package com.spring.ai.firstproject.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -18,6 +19,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -32,6 +34,9 @@ public class ChatServiceImpl implements ChatService {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private ChatClient chatClient;
+    
+    @Autowired
+    private ChatMemory  chatMemory;
 
 
     @Value("classpath:/prompts/user-message.st")
@@ -127,7 +132,8 @@ public class ChatServiceImpl implements ChatService {
     }
     
     @Override
-    public String getResponse(String userQuery) {
+    //@Cacheable(value = "chatResponses", key = "#userQuery")
+    public String getResponse(String userQuery,String userId) {
     	
     	var advisor = RetrievalAugmentationAdvisor.builder()
     	        .queryTransformers(
@@ -147,19 +153,14 @@ public class ChatServiceImpl implements ChatService {
     	        .documentPostProcessors()
     	        .build();
 
+    	 // 2️⃣ Chat Memory Advisor
+        var memoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
+                .conversationId(userId)
+                .build();
         return chatClient
                 .prompt()
-                .system("""
-                        You are a coding assistant.
-                        Answer ONLY using information from the DOCUMENTS.
-                        Use EXACT column names as they appear in the DOCUMENTS.
-                        Do NOT rename, shorten, merge, or paraphrase labels.
-                        Output format must be:
-                        <Exact Column Name>: <Value>
-                        If data is not present, respond with:
-                        "This query is not in my database."
-                    """)
                 .advisors(advisor)
+                .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID,userId))                
                 .user(userQuery)
                 .call()
                 .content();

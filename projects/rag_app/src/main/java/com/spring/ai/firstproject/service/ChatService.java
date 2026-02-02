@@ -13,6 +13,6 @@ public interface ChatService {
 
     void saveData(List<String> list);
     
-    String getResponse(String userQuery);
+    String getResponse(String userQuery,String userId);
 
 }

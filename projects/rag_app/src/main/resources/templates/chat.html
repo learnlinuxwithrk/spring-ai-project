@@ -4,49 +4,60 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ministry-Chatbot</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-    /* Reset & body */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #FAF9F6; display: flex; justify-content: center; align-items: center; height: 100vh; }
-
-    /* Main container */
-    .chat-container {
-        width: 90%;
-        max-width: 800px;
-        height: 90vh;
-        background: #fff;
-        padding: 30px 25px 40px;
-        border-radius: 15px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+    body {
+        font-family: 'Inter', sans-serif;
+        background: #f5f5f7;
         display: flex;
-        flex-direction: column;
-        gap: 20px;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
     }
 
-    /* Header text */
-    .chat-container h1 {
+    .chat-container {
+        width: 95%;
+        max-width: 900px;
+        height: 90vh;
+        background: #fff;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .chat-header {
+        padding: 20px;
+        background: #4B6CB7;
+        background: linear-gradient(to right, #182848, #4B6CB7);
+        color: white;
+        font-size: 1.5rem;
         font-weight: 600;
-        font-size: 2rem;
-        color: #333;
         text-align: center;
     }
 
-    /* Chat area */
     .chat-area {
         flex: 1;
+        padding: 20px;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        padding-right: 5px;
+        gap: 12px;
+        scroll-behavior: smooth;
     }
 
     .chat-bubble {
-        padding: 12px 18px;
+        padding: 12px 20px;
         border-radius: 20px;
-        max-width: 75%;
-        word-wrap: break-word;
+        max-width: 80%;
         font-size: 1rem;
+        line-height: 1.4;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
     }
 
     .chat-bubble.user {
@@ -61,10 +72,33 @@
         border-bottom-left-radius: 0;
     }
 
-    /* Chat input */
+    .chat-bubble table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 5px;
+        box-shadow: inset 0 0 0 1px #ccc;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .chat-bubble th, .chat-bubble td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #ccc;
+        text-align: left;
+        font-size: 0.95rem;
+    }
+
+    .chat-bubble th {
+        background-color: #eee;
+        font-weight: 600;
+    }
+
     .chat-input {
         display: flex;
+        padding: 15px 20px;
+        border-top: 1px solid #ddd;
         gap: 10px;
+        background: #fafafa;
     }
 
     .chat-input input {
@@ -80,74 +114,116 @@
         padding: 15px 20px;
         border: none;
         border-radius: 25px;
-        background: #F29279;
+        background: #4B6CB7;
         color: #fff;
         font-weight: bold;
-        font-size: 1.1rem;
+        font-size: 1rem;
         cursor: pointer;
         transition: 0.2s;
-        box-shadow: 0 5px 15px rgba(242, 146, 121, 0.5);
+        box-shadow: 0 5px 15px rgba(75,108,183,0.3);
     }
 
     .chat-input button:hover {
-        background: #e06a4f;
-        box-shadow: 0 5px 15px rgba(224, 106, 79, 0.5);
+        background: #182848;
+    }
+
+    @media (max-width: 600px) {
+        .chat-bubble { max-width: 100%; font-size: 0.9rem; }
+        .chat-input input, .chat-input button { font-size: 0.9rem; padding: 12px 16px; }
     }
 </style>
 </head>
 <body>
 
 <div class="chat-container">
-    <h1>How can I help you today?</h1>
+    <div class="chat-header">Ministry Chatbot</div>
 
     <div class="chat-area" id="chatArea"></div>
 
     <div class="chat-input">
-        <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter'){sendMessage();}">
+        <input type="text" id="chatInput" placeholder="Type your query..." onkeypress="if(event.key==='Enter'){sendMessage();}">
         <button onclick="sendMessage()">➤</button>
     </div>
 </div>
 
 <script>
-    const chatArea = document.getElementById('chatArea');
-    let eventSource = null;
+	
+let userId = localStorage.getItem("userId");
+if (!userId) {
+    userId = crypto.randomUUID();
+    localStorage.setItem("userId", userId);
+}
+</script>
 
-    function appendMessage(text, sender) {
-        const div = document.createElement('div');
-        div.className = `chat-bubble ${sender}`;
-        div.textContent = text;
-        chatArea.appendChild(div);
-        chatArea.scrollTop = chatArea.scrollHeight;
-    }
+<script>
+const chatArea = document.getElementById('chatArea');
+let eventSource = null;
 
-    function sendMessage() {
-        const input = document.getElementById('chatInput');
-        const text = input.value.trim();
-        if(!text) return;
-        appendMessage(text, 'user');
-        input.value = '';
+function appendMessage(content, sender, isTable=false) {
+    const div = document.createElement('div');
+    div.className = `chat-bubble ${sender}`;
+    if(isTable) div.innerHTML = content;
+    else div.textContent = content;
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
 
-        if(eventSource) eventSource.close();
+function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    appendMessage(text, 'user');
+    input.value = '';
 
-        const encoded = encodeURIComponent(text);
-        const url = `/chatme?q=${encoded}`;
-        eventSource = new EventSource(url);
+    if(eventSource) eventSource.close();
 
-        let botText = '';
-        const botDiv = document.createElement('div');
-        botDiv.className = 'chat-bubble bot';
-        chatArea.appendChild(botDiv);
+    const url = `/chatme?q=${encodeURIComponent(text)}&userId=${userId}`;
+    eventSource = new EventSource(url);
 
-        eventSource.onmessage = function(event) {
+    const botDiv = document.createElement('div');
+    botDiv.className = 'chat-bubble bot';
+    chatArea.appendChild(botDiv);
+
+    let botText = '';
+    let isTable = false;
+
+    eventSource.onmessage = function(event) {
+        if(event.data.trim() === '') return;
+
+        // Detect table from markdown style
+        if(event.data.includes('|')) {
+            isTable = true;
+            botText += event.data + '\n';
+            botDiv.innerHTML = convertMarkdownTableToHTML(botText);
+        } else {
             botText += event.data + ' ';
-            botDiv.textContent = botText;
-            chatArea.scrollTop = chatArea.scrollHeight;
-        };
+            if(!isTable) botDiv.textContent = botText;
+        }
 
-        eventSource.onerror = function() {
-            eventSource.close();
-        };
+        chatArea.scrollTop = chatArea.scrollHeight;
+    };
+
+    eventSource.addEventListener("done", () => eventSource.close());
+    eventSource.onerror = () => eventSource.close();
+}
+
+// Convert markdown table to HTML
+function convertMarkdownTableToHTML(md) {
+    const lines = md.trim().split('\n');
+    if(lines.length < 2) return md;
+
+    let html = '<table>';
+    const headers = lines[0].split('|').map(h => h.trim()).filter(Boolean);
+    const rows = lines.slice(2);
+
+    html += '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+    for(const row of rows) {
+        const cols = row.split('|').map(c => c.trim()).filter(Boolean);
+        html += '<tr>' + cols.map(c => `<td>${c}</td>`).join('') + '</tr>';
     }
+    html += '</table>';
+    return html;
+}
 </script>
 
 </body>
