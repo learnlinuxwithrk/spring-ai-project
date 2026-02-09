@@ -70,7 +70,7 @@
 		    </div>
 		</aside>
 
-		<!-- CHAT -->
+		<!-- CHAT 
 		<div class="chat-container">
 
 			<div class="chat-header">
@@ -85,71 +85,130 @@
 				<button onclick="sendMessage()">➤</button>
 			</div>
 
+		</div> -->
+		
+		<div class="chat-container">
+
+		    <div class="chat-header">
+		        <div class="chat-title">
+		            <h2>DoChat AI</h2>
+		            <span class="status">● Online</span>
+		        </div>
+		    </div>
+
+		    <div class="chat-area" id="chatArea"></div>
+
+		    <div class="chat-input-container">
+		        <textarea id="chatInput"
+		                  placeholder="Message DoChat AI..."
+		                  rows="1"></textarea>
+		        <button id="sendBtn">➤</button>
+		    </div>
+
 		</div>
+
 	</div>
 
 	<script>
-		let userId = localStorage.getItem("userId");
-		if (!userId) {
-			userId = crypto.randomUUID();
-			localStorage.setItem("userId", userId);
-		}
+	let userId = localStorage.getItem("userId");
+	if (!userId) {
+	    userId = crypto.randomUUID();
+	    localStorage.setItem("userId", userId);
+	}
 
-		const chatArea = document.getElementById("chatArea");
-		let eventSource = null;
+	const chatArea = document.getElementById("chatArea");
+	const input = document.getElementById("chatInput");
+	const sendBtn = document.getElementById("sendBtn");
 
-		function addBubble(content, sender, html = false) {
-			const div = document.createElement("div");
-			div.className = `chat-bubble ${sender}`;
-			html ? div.innerHTML = content : div.textContent = content;
-			chatArea.appendChild(div);
-			chatArea.scrollTop = chatArea.scrollHeight;
-			return div;
-		}
+	let eventSource = null;
 
-		function sendMessage() {
-			const input = document.getElementById("chatInput");
-			const text = input.value.trim();
-			if (!text) return;
+	function addMessage(content, sender, html = false) {
+	    const wrapper = document.createElement("div");
+	    wrapper.className = `chat-message ${sender}`;
 
-			addBubble(text, "user");
-			input.value = "";
+	    const bubble = document.createElement("div");
+	    bubble.className = `chat-bubble ${sender}`;
 
-			if (eventSource) eventSource.close();
-			const botDiv = addBubble("", "bot");
+	    html ? bubble.innerHTML = content : bubble.textContent = content;
 
-			let buffer = "";
-			let isTable = false;
+	    wrapper.appendChild(bubble);
+	    chatArea.appendChild(wrapper);
+	    chatArea.scrollTop = chatArea.scrollHeight;
 
-			eventSource = new EventSource(`/chatme?q=${encodeURIComponent(text)}&userId=${userId}`);
+	    return bubble;
+	}
 
-			eventSource.onmessage = e => {
-				if (!e.data.trim()) return;
-				if (e.data.includes("|")) {
-					isTable = true;
-					buffer += e.data + "\n";
-					botDiv.innerHTML = mdTable(buffer);
-				} else {
-					buffer += e.data + " ";
-					if (!isTable) botDiv.textContent = buffer;
-				}
-			};
+	function formatResponse(text) {
 
-			eventSource.onerror = () => eventSource.close();
-		}
+	    text = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-		function mdTable(md) {
-			const lines = md.trim().split("\n");
-			if (lines.length < 2) return md;
-			let html = "<table>";
-			const headers = lines[0].split("|").filter(Boolean);
-			html += "<tr>" + headers.map(h => `<th>${h.trim()}</th>`).join("") + "</tr>";
-			for (let i = 2; i < lines.length; i++) {
-				const cols = lines[i].split("|").filter(Boolean);
-				html += "<tr>" + cols.map(c => `<td>${c.trim()}</td>`).join("") + "</tr>";
-			}
-			return html + "</table>";
-		}
+	    text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+	    text = text.replace(/^\s*-\s+(.*)$/gm, "<li>$1</li>");
+	    text = text.replace(/(<li>.*<\/li>)/gms, "<ul>$1</ul>");
+
+	    text = text.replace(/\n/g, "<br>");
+
+	    if (text.includes("|")) {
+	        return markdownTable(text);
+	    }
+
+	    return text;
+	}
+
+	function markdownTable(md) {
+	    const lines = md.trim().split("\n");
+	    if (lines.length < 2) return md;
+
+	    let html = "<table>";
+	    const headers = lines[0].split("|").filter(Boolean);
+	    html += "<tr>" + headers.map(h => `<th>${h.trim()}</th>`).join("") + "</tr>";
+
+	    for (let i = 2; i < lines.length; i++) {
+	        const cols = lines[i].split("|").filter(Boolean);
+	        html += "<tr>" + cols.map(c => `<td>${c.trim()}</td>`).join("") + "</tr>";
+	    }
+
+	    return html + "</table>";
+	}
+
+	function sendMessage() {
+
+	    const text = input.value.trim();
+	    if (!text) return;
+
+	    addMessage(text, "user");
+	    input.value = "";
+
+	    if (eventSource) eventSource.close();
+
+	    const botBubble = addMessage("", "bot");
+
+	    let buffer = "";
+
+	    eventSource = new EventSource(`/chatme?q=${encodeURIComponent(text)}&userId=${userId}`);
+
+	    eventSource.onmessage = e => {
+	        if (!e.data.trim()) return;
+
+	        buffer += e.data;
+	        botBubble.innerHTML = formatResponse(buffer);
+	        chatArea.scrollTop = chatArea.scrollHeight;
+	    };
+
+	    eventSource.onerror = () => {
+	        eventSource.close();
+	    };
+	}
+
+	sendBtn.addEventListener("click", sendMessage);
+
+	input.addEventListener("keydown", e => {
+	    if (e.key === "Enter" && !e.shiftKey) {
+	        e.preventDefault();
+	        sendMessage();
+	    }
+	});
 	</script>
 
 </body>
