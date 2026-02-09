@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Upload</title>
+	<link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            color: #333;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-upload-input {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            border: 3px dashed #d0d0d0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: #f8f9fa;
+        }
+
+        .file-upload-label:hover {
+            border-color: #667eea;
+            background-color: #f0f2ff;
+        }
+
+        .file-upload-label.dragover {
+            border-color: #667eea;
+            background-color: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            text-align: center;
+        }
+
+        .upload-text p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .upload-text .main-text {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .upload-text .sub-text {
+            font-size: 13px;
+            color: #999;
+        }
+
+        .file-info {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 10px;
+            border-left: 4px solid #4caf50;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #2e7d32;
+            word-break: break-all;
+        }
+
+        .file-size {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .remove-file {
+            margin-top: 10px;
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: underline;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .loader {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        .loader.show {
+            display: block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .upload-icon {
+                font-size: 36px;
+            }
+
+            .file-upload-label {
+                padding: 30px 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px 15px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .subtitle {
+                font-size: 12px;
+            }
+
+            .upload-text .main-text {
+                font-size: 14px;
+            }
+
+            .submit-btn {
+                padding: 12px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 Document Upload</h1>
+        <p class="subtitle">Upload your documents securely</p>
+
+        <!-- Alert Messages -->
+        <div id="alertSuccess" class="alert alert-success">
+            <strong>Success!</strong> <span id="successMessage"></span>
+        </div>
+        <div id="alertError" class="alert alert-error">
+            <strong>Error!</strong> <span id="errorMessage"></span>
+        </div>
+
+        <form id="uploadForm" th:action="@{/doUpload}" method="post" enctype="multipart/form-data">
+            
+            <!-- Document Type Dropdown -->
+            <div class="form-group">
+                <label for="documentType">
+                    Document Type <span class="required">*</span>
+                </label>
+                <select id="documentType" name="type" required>
+                    <option value="">Select document type</option>
+                    <option value="pdf">PDF Document</option>
+                    <option value="text">Text Document</option>
+                    <option value="json">JSON Document</option>
+                </select>
+            </div>
+
+            <!-- File Upload Area -->
+            <div class="form-group">
+                <label for="fileInput">
+                    Upload Document <span class="required">*</span>
+                </label>
+                <div class="file-upload-wrapper">
+                    <input type="file" 
+                           id="fileInput" 
+                           name="file" 
+                           class="file-upload-input" 
+                           accept=".pdf,.txt,.json"
+                           required>
+                    <label for="fileInput" id="fileLabel" class="file-upload-label">
+                        <div class="upload-text">
+                            <div class="upload-icon">📁</div>
+                            <p class="main-text">Click to upload or drag and drop</p>
+                            <p class="sub-text">PDF, TXT, or JSON (MAX. 10MB)</p>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- File Info Display -->
+                <div id="fileInfo" class="file-info">
+                    <div class="file-name" id="fileName"></div>
+                    <div class="file-size" id="fileSize"></div>
+                    <button type="button" class="remove-file" id="removeFile">Remove file</button>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span id="btnText">Upload Document</span>
+                <div class="loader" id="loader"></div>
+            </button>
+        </form>
+    </div>
+
+    <script th:inline="javascript">
+        const fileInput = document.getElementById('fileInput');
+        const fileLabel = document.getElementById('fileLabel');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const removeFileBtn = document.getElementById('removeFile');
+        const uploadForm = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const loader = document.getElementById('loader');
+        const alertSuccess = document.getElementById('alertSuccess');
+        const alertError = document.getElementById('alertError');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // File size limit (10MB)
+        const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+        // File input change event
+        fileInput.addEventListener('change', function(e) {
+            handleFileSelect(e.target.files[0]);
+        });
+
+        // Drag and drop events
+        fileLabel.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            fileLabel.classList.add('dragover');
+        });
+
+        fileLabel.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            fileLabel.classList.remove('dragover');
+        });
+
+        fileLabel.addEventListener('drop', function(e) {
+            e.preventDefault();
+            fileLabel.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // Handle file selection
+        function handleFileSelect(file) {
+            if (!file) return;
+
+            // Validate file size
+            if (file.size > MAX_FILE_SIZE) {
+                showAlert('error', 'File size exceeds 10MB limit');
+                fileInput.value = '';
+                return;
+            }
+
+            // Validate file type
+            const allowedTypes = ['application/pdf', 'text/plain', 'application/json'];
+            const allowedExtensions = ['.pdf', '.txt', '.json'];
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+                showAlert('error', 'Please select a valid file type (PDF, TXT, or JSON)');
+                fileInput.value = '';
+                return;
+            }
+
+            // Display file info
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.classList.add('show');
+            hideAlerts();
+        }
+
+        // Remove file
+        removeFileBtn.addEventListener('click', function() {
+            fileInput.value = '';
+            fileInfo.classList.remove('show');
+        });
+
+		fetch(uploadForm.action, {
+		    method: 'POST',
+		    body: formData
+		})
+		.then(async response => {
+
+		    const contentType = response.headers.get("content-type");
+
+		    if (!response.ok) {
+
+		        if (contentType && contentType.includes("application/json")) {
+		            const err = await response.json();
+		            throw new Error(err.message || "Upload failed");
+		        } else {
+		            const text = await response.text();
+		            throw new Error(text || "Upload failed");
+		        }
+		    }
+
+		    return contentType && contentType.includes("application/json")
+		        ? response.json()
+		        : { message: "Upload successful" };
+		})
+		.then(data => {
+		    showAlert('success', data.message || 'Document uploaded successfully!');
+		    uploadForm.reset();
+		    fileInfo.classList.remove('show');
+		})
+		.catch(error => {
+		    showAlert('error', error.message || 'An error occurred during upload');
+		})
+		.finally(() => {
+		    btnText.style.display = 'inline';
+		    loader.classList.remove('show');
+		    submitBtn.disabled = false;
+		});
+
+        // Show alert
+        function showAlert(type, message) {
+            hideAlerts();
+            if (type === 'success') {
+                successMessage.textContent = message;
+                alertSuccess.classList.add('show');
+                setTimeout(() => alertSuccess.classList.remove('show'), 5000);
+            } else {
+                errorMessage.textContent = message;
+                alertError.classList.add('show');
+                setTimeout(() => alertError.classList.remove('show'), 5000);
+            }
+        }
+
+        // Hide alerts
+        function hideAlerts() {
+            alertSuccess.classList.remove('show');
+            alertError.classList.remove('show');
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>

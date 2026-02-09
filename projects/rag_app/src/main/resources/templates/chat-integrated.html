@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Ministry Chatbot – DoChat UI</title>
+
+	<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+	<link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+
+	<div class="app">
+
+		<!-- Sidebar -->
+		<aside class="sidebar" id="sidebar">
+		    <div class="logo-section">
+		        <div class="logo-icon">🤖</div>
+		        <div class="logo-text">
+		            <h2>DoChat AI</h2>
+		            <p>Admin Panel</p>
+		        </div>
+		    </div>
+
+		    <nav>
+		        <ul class="nav-menu">
+		            <li class="nav-item">
+		                <a href="/dashboard" class="nav-link">
+		                    <span class="nav-icon">📊</span>
+		                    Dashboard
+		                </a>
+		            </li>
+		            <li class="nav-item">
+		                <a href="/upload" class="nav-link active">
+		                    <span class="nav-icon">📤</span>
+		                    Upload Documents
+		                </a>
+		            </li>
+		            <li class="nav-item">
+		                <a href="/chat" class="nav-link">
+		                    <span class="nav-icon">💬</span>
+		                    Chatbot
+		                </a>
+		            </li>
+		            <li class="nav-item">
+		                <a href="/reports" class="nav-link">
+		                    <span class="nav-icon">📈</span>
+		                    Reports
+		                </a>
+		            </li>
+		         
+		            <li class="nav-item">
+		                <a href="#" class="nav-link" id="logoutBtn">
+		                    <span class="nav-icon">🚪</span>
+		                    Logout
+		                </a>
+		            </li>
+		        </ul>
+		    </nav>
+
+		    <div class="user-section">
+		        <div class="user-avatar" id="userAvatar">JD</div>
+		        <div class="user-info">
+		            <h4 id="userName">John Doe</h4>
+		            <p id="userRole">Administrator</p>
+		        </div>
+		    </div>
+		</aside>
+
+		<!-- CHAT -->
+		<div class="chat-container">
+
+			<div class="chat-header">
+				<h1>Chatbot</h1>
+				<span style="color:#10b981;font-size:13px">● Online</span>
+			</div>
+			<div class="chat-area" id="chatArea"></div>
+
+			<div class="chat-input">
+				<input id="chatInput" placeholder="Ask your question..."
+					onkeypress="if(event.key==='Enter'){sendMessage()}">
+				<button onclick="sendMessage()">➤</button>
+			</div>
+
+		</div>
+	</div>
+
+	<script>
+		let userId = localStorage.getItem("userId");
+		if (!userId) {
+			userId = crypto.randomUUID();
+			localStorage.setItem("userId", userId);
+		}
+
+		const chatArea = document.getElementById("chatArea");
+		let eventSource = null;
+
+		function addBubble(content, sender, html = false) {
+			const div = document.createElement("div");
+			div.className = `chat-bubble ${sender}`;
+			html ? div.innerHTML = content : div.textContent = content;
+			chatArea.appendChild(div);
+			chatArea.scrollTop = chatArea.scrollHeight;
+			return div;
+		}
+
+		function sendMessage() {
+			const input = document.getElementById("chatInput");
+			const text = input.value.trim();
+			if (!text) return;
+
+			addBubble(text, "user");
+			input.value = "";
+
+			if (eventSource) eventSource.close();
+			const botDiv = addBubble("", "bot");
+
+			let buffer = "";
+			let isTable = false;
+
+			eventSource = new EventSource(`/chatme?q=${encodeURIComponent(text)}&userId=${userId}`);
+
+			eventSource.onmessage = e => {
+				if (!e.data.trim()) return;
+				if (e.data.includes("|")) {
+					isTable = true;
+					buffer += e.data + "\n";
+					botDiv.innerHTML = mdTable(buffer);
+				} else {
+					buffer += e.data + " ";
+					if (!isTable) botDiv.textContent = buffer;
+				}
+			};
+
+			eventSource.onerror = () => eventSource.close();
+		}
+
+		function mdTable(md) {
+			const lines = md.trim().split("\n");
+			if (lines.length < 2) return md;
+			let html = "<table>";
+			const headers = lines[0].split("|").filter(Boolean);
+			html += "<tr>" + headers.map(h => `<th>${h.trim()}</th>`).join("") + "</tr>";
+			for (let i = 2; i < lines.length; i++) {
+				const cols = lines[i].split("|").filter(Boolean);
+				html += "<tr>" + cols.map(c => `<td>${c.trim()}</td>`).join("") + "</tr>";
+			}
+			return html + "</table>";
+		}
+	</script>
+
+</body>
+
+</html>

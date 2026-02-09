@@ -6,202 +6,356 @@ import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class DataLoaderImpl implements DataLoader {
 
-    @Value("classpath:waqf_progress_report.json")
-    private Resource jsonResource;
+	@Value("classpath:waqf_progress_report.json")
+	private Resource jsonResource;
 
-   @Value("classpath:waqf_progress_report.pdf")
-    private Resource pdfResource;
+	private Resource pdfResource;
 
-    /**
-     * Load JSON documents from the sample JSON file.
-     * Each "event" becomes a separate Document.
-     */
-    
-   
-   public List<Document> loadDocumentsFromJsonNEW() {
-	    List<Document> documents = new ArrayList<>();
-	    try {
-	        ObjectMapper mapper = new ObjectMapper();
-	        JsonNode root = mapper.readTree(jsonResource.getInputStream());
+	private static final Logger log = LoggerFactory.getLogger(DataLoaderImpl.class);
 
-	        for (JsonNode stateNode : root) {
-	            String state = stateNode.path("state_waqf_board").asText();
-	            int waqfInitiated = stateNode.path("waqf_property_initiated_for_uploading").asInt();
-	            int makersSubmitted = stateNode.path("makers_submitted").asInt();
-	            int checkersSubmitted = stateNode.path("checkers_submitted").asInt();
-	            int approversApproved = stateNode.path("approvers_approved").asInt();
-	            int rejected = stateNode.path("rejected_property").asInt();
-	            int pending = stateNode.path("pending_for_approval").asInt();
-	            int totalInitiated = stateNode.path("total_no_of_waqf_property_initiated_till_date").asInt();
+	// Safe chunk config
+	private static final int CHUNK_SIZE = 1500;
+	private static final int CHUNK_OVERLAP = 200;
 
-	            // Build readable text
-	            String text = String.format(
-	                    "%s Waqf Progress report:\n" +
-	                    "Waqf Property Initiated: %d\n" +
-	                    "Makers Submitted: %d\n" +
-	                    "Checkers Submitted: %d\n" +
-	                    "Approvers Approved: %d\n" +
-	                    "Rejected Properties: %d\n" +
-	                    "Pending for Approval: %d\n" +
-	                    "Total Properties Initiated: %d",
-	                    state, waqfInitiated, makersSubmitted, checkersSubmitted,
-	                    approversApproved, rejected, pending, totalInitiated
-	            );
+	private VectorStore vectorStore;
 
-	            Document doc = new Document(text);
+	/**
+	 * Load JSON documents from the sample JSON file. Each "event" becomes a
+	 * separate Document.
+	 */
 
-	            // ✅ Add metadata for accurate matching
-	          //  doc.getMetadata().put("state_waqf_board", state);                 // display name
-	            doc.getMetadata().put("state", state.toLowerCase());              // lowercase for exact matching
-	            doc.getMetadata().put("waqf_property_initiated_for_uploading", waqfInitiated);
-	            doc.getMetadata().put("makers_submitted", makersSubmitted);
-	            doc.getMetadata().put("checkers_submitted", checkersSubmitted);
-	            doc.getMetadata().put("approvers_approved", approversApproved);
-	            doc.getMetadata().put("rejected_property", rejected);
-	            doc.getMetadata().put("pending_for_approval", pending);
-	            doc.getMetadata().put("total_no_of_waqf_property_initiated_till_date", totalInitiated);
+	public List<Document> loadDocumentsFromJsonNEW() {
+		List<Document> documents = new ArrayList<>();
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			JsonNode root = mapper.readTree(jsonResource.getInputStream());
 
-	            documents.add(doc);
-	        }
+			for (JsonNode stateNode : root) {
+				String state = stateNode.path("state_waqf_board").asText();
+				int waqfInitiated = stateNode.path("waqf_property_initiated_for_uploading").asInt();
+				int makersSubmitted = stateNode.path("makers_submitted").asInt();
+				int checkersSubmitted = stateNode.path("checkers_submitted").asInt();
+				int approversApproved = stateNode.path("approvers_approved").asInt();
+				int rejected = stateNode.path("rejected_property").asInt();
+				int pending = stateNode.path("pending_for_approval").asInt();
+				int totalInitiated = stateNode.path("total_no_of_waqf_property_initiated_till_date").asInt();
 
-	    } catch (IOException e) {
-	        e.printStackTrace();
-	    }
-	    return documents;
+				// Build readable text
+				String text = String.format(
+						"%s Waqf Progress report:\n" + "Waqf Property Initiated: %d\n" + "Makers Submitted: %d\n"
+								+ "Checkers Submitted: %d\n" + "Approvers Approved: %d\n" + "Rejected Properties: %d\n"
+								+ "Pending for Approval: %d\n" + "Total Properties Initiated: %d",
+						state, waqfInitiated, makersSubmitted, checkersSubmitted, approversApproved, rejected, pending,
+						totalInitiated);
+
+				Document doc = new Document(text);
+
+				// ✅ Add metadata for accurate matching
+				// doc.getMetadata().put("state_waqf_board", state); // display name
+				doc.getMetadata().put("state", state.toLowerCase()); // lowercase for exact matching
+				doc.getMetadata().put("waqf_property_initiated_for_uploading", waqfInitiated);
+				doc.getMetadata().put("makers_submitted", makersSubmitted);
+				doc.getMetadata().put("checkers_submitted", checkersSubmitted);
+				doc.getMetadata().put("approvers_approved", approversApproved);
+				doc.getMetadata().put("rejected_property", rejected);
+				doc.getMetadata().put("pending_for_approval", pending);
+				doc.getMetadata().put("total_no_of_waqf_property_initiated_till_date", totalInitiated);
+
+				documents.add(doc);
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return documents;
 	}
 
-   public List<Document> loadDocumentsFromJson() {
-	   
-	    List<Document> documents = new ArrayList<>();
-	    try {
-	        ObjectMapper mapper = new ObjectMapper();
-	        JsonNode root = mapper.readTree(jsonResource.getInputStream());
+	public List<Document> loadDocumentsFromJson() {
 
-	        for (JsonNode stateNode : root) {
-	            String state = stateNode.path("state_waqf_board").asText();
-	            int waqfInitiated = stateNode.path("waqf_property_initiated_for_uploading").asInt();
-	            int makersSubmitted = stateNode.path("makers_submitted").asInt();
-	            int checkersSubmitted = stateNode.path("checkers_submitted").asInt();
-	            int approversApproved = stateNode.path("approvers_approved").asInt();
-	            int rejected = stateNode.path("rejected_property").asInt();
-	            int pending = stateNode.path("pending_for_approval").asInt();
-	            int totalInitiated = stateNode.path("total_no_of_waqf_property_initiated_till_date").asInt();
+		List<Document> documents = new ArrayList<>();
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			JsonNode root = mapper.readTree(jsonResource.getInputStream());
 
-	            // Build readable text
-	            String text = String.format(
-	                    "%s Waqf Progress:\n" +
-	                    "Waqf Property Initiated: %d\n" +
-	                    "Makers Submitted: %d\n" +
-	                    "Checkers Submitted: %d\n" +
-	                    "Approvers Approved: %d\n" +
-	                    "Rejected Properties: %d\n" +
-	                    "Pending for Approval: %d\n" +
-	                    "Total Properties Initiated: %d",
-	                    state, waqfInitiated, makersSubmitted, checkersSubmitted,
-	                    approversApproved, rejected, pending, totalInitiated
-	            );
+			for (JsonNode stateNode : root) {
+				String state = stateNode.path("state_waqf_board").asText();
+				int waqfInitiated = stateNode.path("waqf_property_initiated_for_uploading").asInt();
+				int makersSubmitted = stateNode.path("makers_submitted").asInt();
+				int checkersSubmitted = stateNode.path("checkers_submitted").asInt();
+				int approversApproved = stateNode.path("approvers_approved").asInt();
+				int rejected = stateNode.path("rejected_property").asInt();
+				int pending = stateNode.path("pending_for_approval").asInt();
+				int totalInitiated = stateNode.path("total_no_of_waqf_property_initiated_till_date").asInt();
 
-	            Document doc = new Document(text);
+				// Build readable text
+				String text = String.format(
+						"%s Waqf Progress:\n" + "Waqf Property Initiated: %d\n" + "Makers Submitted: %d\n"
+								+ "Checkers Submitted: %d\n" + "Approvers Approved: %d\n" + "Rejected Properties: %d\n"
+								+ "Pending for Approval: %d\n" + "Total Properties Initiated: %d",
+						state, waqfInitiated, makersSubmitted, checkersSubmitted, approversApproved, rejected, pending,
+						totalInitiated);
 
-	            // ✅ Important: use exact JSON key for metadata
-	            doc.getMetadata().put("state_waqf_board", state);
-	            doc.getMetadata().put("waqf_property_initiated_for_uploading", waqfInitiated);
-	            doc.getMetadata().put("makers_submitted", makersSubmitted);
-	            doc.getMetadata().put("checkers_submitted", checkersSubmitted);
-	            doc.getMetadata().put("approvers_approved", approversApproved);
-	            doc.getMetadata().put("rejected_property", rejected);
-	            doc.getMetadata().put("pending_for_approval", pending);
-	            doc.getMetadata().put("total_no_of_waqf_property_initiated_till_date", totalInitiated);
+				Document doc = new Document(text);
 
-	            documents.add(doc);
-	        }
+				// ✅ Important: use exact JSON key for metadata
+				doc.getMetadata().put("state_waqf_board", state);
+				doc.getMetadata().put("waqf_property_initiated_for_uploading", waqfInitiated);
+				doc.getMetadata().put("makers_submitted", makersSubmitted);
+				doc.getMetadata().put("checkers_submitted", checkersSubmitted);
+				doc.getMetadata().put("approvers_approved", approversApproved);
+				doc.getMetadata().put("rejected_property", rejected);
+				doc.getMetadata().put("pending_for_approval", pending);
+				doc.getMetadata().put("total_no_of_waqf_property_initiated_till_date", totalInitiated);
 
-	    } catch (IOException e) {
-	        e.printStackTrace();
-	    }
-	    return documents;
+				documents.add(doc);
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return documents;
 	}
 
+	public List<Document> loadDocumentsFromJsonDefault() {
+		List<Document> documents = new ArrayList<>();
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			JsonNode root = mapper.readTree(jsonResource.getInputStream());
 
-    public List<Document> loadDocumentsFromJsonDefault() {
-        List<Document> documents = new ArrayList<>();
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(jsonResource.getInputStream());
+			for (JsonNode event : root.path("events")) {
+				String text = String.format("Event name: %s. Event date: %s.", event.path("name").asText(),
+						event.path("date").asText());
 
-            for (JsonNode event : root.path("events")) {
-                String text = String.format(
-                        "Event name: %s. Event date: %s.",
-                        event.path("name").asText(),
-                        event.path("date").asText()
-                );
+				Document doc = new Document(text);
+				doc.getMetadata().put("eventId", event.path("id").asInt());
+				documents.add(doc);
+			}
 
-                Document doc = new Document(text);
-                doc.getMetadata().put("eventId", event.path("id").asInt());
-                documents.add(doc);
-            }
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+		System.out.println("JSON Document Size : " + documents.size());
+		documents.forEach(d -> System.out.println("ITEM " + d));
+		return documents;
+	}
 
-        System.out.println("JSON Document Size : " + documents.size());
-        documents.forEach(d -> System.out.println("ITEM " + d));
-        return documents;
-    }
+	/**
+	 * Load PDF documents using PagePdfDocumentReader. Each page becomes a separate
+	 * Document.
+	 */
+	public List<Document> loadDocumentsFromPdf() {
+		var pdfReader = new PagePdfDocumentReader(pdfResource,
+				PdfDocumentReaderConfig.builder().withPageTopMargin(0).withPageExtractedTextFormatter(
+						ExtractedTextFormatter.builder().withNumberOfTopTextLinesToDelete(0).build()).build());
 
-    /**
-     * Load PDF documents using PagePdfDocumentReader.
-     * Each page becomes a separate Document.
-     */
-    public List<Document> loadDocumentsFromPdf() {
-        var pdfReader = new PagePdfDocumentReader(pdfResource,
-                PdfDocumentReaderConfig.builder()
-                        .withPageTopMargin(0)
-                        .withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
-                                .withNumberOfTopTextLinesToDelete(0)
-                                .build())
-                        .build()
-        );
+		List<Document> docs = pdfReader.read();
+		System.out.println("PDF Document Size : " + docs.size());
+		docs.forEach(d -> System.out.println("ITEM " + d));
+		return docs;
+	}
 
-        List<Document> docs = pdfReader.read();
-        System.out.println("PDF Document Size : " + docs.size());
-        docs.forEach(d -> System.out.println("ITEM " + d));
-        return docs;
-    }
+	/**
+	 * Step 1: ingest only JSON documents into vector store
+	 */
+	public List<Document> ingestJsonIntoVectorStore(VectorStore vectorStore) {
+		List<Document> jsonDocs = loadDocumentsFromJson();
+		vectorStore.add(jsonDocs);
 
-    /**
-     * Step 1: ingest only JSON documents into vector store
-     */
-    public List<Document> ingestJsonIntoVectorStore(VectorStore vectorStore) {
-        List<Document> jsonDocs = loadDocumentsFromJson();
-        vectorStore.add(jsonDocs);       
-     
-        System.out.println("JSON documents ingested into vector store: " + jsonDocs.size());
-        return jsonDocs;
-    }
+		System.out.println("JSON documents ingested into vector store: " + jsonDocs.size());
+		return jsonDocs;
+	}
 
-    /**
-     * Step 2: ingest only PDF documents into vector store
-     */
-    public List<Document> ingestPdfIntoVectorStore(VectorStore vectorStore) {
-        List<Document> pdfDocs = loadDocumentsFromPdf();
-        vectorStore.add(pdfDocs);
-        System.out.println("PDF documents ingested into vector store: " + pdfDocs.size());
-        return pdfDocs;
-        
-    }
+	/**
+	 * Step 2: ingest only PDF documents into vector store
+	 */
+	public List<Document> ingestPdfIntoVectorStore(VectorStore vectorStore) {
+		List<Document> pdfDocs = loadDocumentsFromPdf();
+		vectorStore.add(pdfDocs);
+		System.out.println("PDF documents ingested into vector store: " + pdfDocs.size());
+		return pdfDocs;
+
+	}
+
+	public List<Document> ingestDocument(MultipartFile file, VectorStore vectorStore) {
+
+		try {
+
+			if (file == null || file.isEmpty()) {
+				throw new IllegalArgumentException("Uploaded file is empty.");
+			}
+
+			String filename = file.getOriginalFilename();
+			if (filename == null) {
+				throw new IllegalArgumentException("File name is invalid.");
+			}
+
+			filename = filename.toLowerCase();
+			List<Document> documents;
+
+			if (filename.endsWith(".pdf")) {
+				documents = ingestPdf(file);
+			} else if (filename.endsWith(".txt") || filename.endsWith(".json")) {
+				documents = ingestText(file);
+			} else {
+				throw new IllegalArgumentException("Unsupported file type: " + filename);
+			}
+
+			log.info("Original documents count: {}", documents.size());
+
+			// 🔥 IMPORTANT: Split before embedding
+			List<Document> chunks = splitDocuments(documents);
+
+			log.info("Total chunks created: {}", chunks.size());
+
+			vectorStore.add(chunks);
+
+			log.info("Successfully inserted {} chunks into vector store.", chunks.size());
+
+			return chunks;
+
+		} catch (Exception e) {
+			log.error("Document ingestion failed", e);
+			throw new RuntimeException("Ingestion failed: " + e.getMessage());
+		}
+
+	}
+
+	/**
+	 * ================================ SAFE DOCUMENT SPLITTER
+	 * ================================
+	 */
+	private List<Document> splitDocuments(List<Document> documents) {
+
+		List<Document> result = new ArrayList<>();
+
+		for (Document doc : documents) {
+
+			String text = doc.getText();
+
+			if (text == null || text.isBlank()) {
+				continue;
+			}
+
+			int start = 0;
+
+			while (start < text.length()) {
+
+				int end = Math.min(start + CHUNK_SIZE, text.length());
+				String chunkText = text.substring(start, end);
+
+				Document chunk = new Document(chunkText);
+				chunk.getMetadata().putAll(doc.getMetadata());
+
+				result.add(chunk);
+
+				start += CHUNK_SIZE - CHUNK_OVERLAP;
+			}
+		}
+
+		return result;
+	}
+
+	private List<Document> ingestText(MultipartFile file) throws IOException {
+
+		String text = new String(file.getBytes(), StandardCharsets.UTF_8);
+
+		Document doc = new Document(text);
+		doc.getMetadata().put("source", "uploaded-text");
+		doc.getMetadata().put("filename", file.getOriginalFilename());
+
+		return List.of(doc);
+	}
+
+	private List<Document> ingestPdf(MultipartFile file) throws Exception {
+
+	    Resource resource = new InputStreamResource(file.getInputStream());
+
+	    PagePdfDocumentReader reader =
+	            new PagePdfDocumentReader(
+	                    resource,
+	                    PdfDocumentReaderConfig.builder()
+	                            .withPageExtractedTextFormatter(
+	                                    ExtractedTextFormatter.builder().build()
+	                            )
+	                            .build()
+	            );
+
+	    List<Document> rawDocs = reader.read();
+
+	    System.out.println("File Name: " + file.getOriginalFilename());
+
+	    List<Document> cleanDocs = new ArrayList<>();
+
+	    int pageNumber = 1;
+
+	    for (Document rawDoc : rawDocs) {
+
+	        String text = rawDoc.getText();
+
+	        if (text == null || text.isBlank()) {
+	            continue; // skip empty pages
+	        }
+
+	        Map<String, Object> metadata = new HashMap<>();
+
+	        // SAFE metadata only
+	        metadata.put("source", "uploaded-pdf");
+	        metadata.put("filename",
+	                file.getOriginalFilename() != null
+	                        ? file.getOriginalFilename()
+	                        : "unknown.pdf");
+
+	        metadata.put("page_number", pageNumber++);
+
+	        // Create NEW clean document (important!)
+	        Document cleanDoc = new Document(text, metadata);
+
+	        cleanDocs.add(cleanDoc);
+	    }
+
+	    System.out.println("Total Clean Pages: " + cleanDocs.size());
+
+	    return cleanDocs;
+	}
+
+//	private List<Document> ingestPdf(MultipartFile file) throws Exception {
+//
+//		Resource resource = new InputStreamResource(file.getInputStream());
+//
+//		PagePdfDocumentReader reader = new PagePdfDocumentReader(resource, PdfDocumentReaderConfig.builder()
+//				.withPageExtractedTextFormatter(ExtractedTextFormatter.builder().build()).build());
+//
+//		List<Document> docs = reader.read();
+//
+//		System.out.println("File Name : "+file.getOriginalFilename());
+//		docs.forEach(doc -> {
+//			doc.getMetadata().put("source", "uploaded-pdf");
+//			doc.getMetadata().put("filename", file.getOriginalFilename());
+//		});
+//
+//		return docs;
+//	}
+
 }

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - DocuChat AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"> 
+	<link rel="stylesheet" th:href="@{/css/style.css}">
+
+  
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo-section">
+                <div class="logo-icon">🤖</div>
+                <div class="logo-text">
+                    <h2>DocuChat AI</h2>
+                    <p>Admin Panel</p>
+                </div>
+            </div>
+
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="/dashboard" class="nav-link active">
+                            <span class="nav-icon">📊</span>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/upload" class="nav-link">
+                            <span class="nav-icon">📤</span>
+                            Upload Documents
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/chat" class="nav-link">
+                            <span class="nav-icon">💬</span>
+                            Chatbot
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/reports" class="nav-link">
+                            <span class="nav-icon">📈</span>
+                            Reports
+                        </a>
+                    </li>
+                
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" id="logoutBtn">
+                            <span class="nav-icon">🚪</span>
+                            Logout
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="user-section">
+                <div class="user-avatar" id="userAvatar">JD</div>
+                <div class="user-info">
+                    <h4 id="userName">John Doe</h4>
+                    <p id="userRole">Administrator</p>
+                </div>
+            </div>
+        </aside>
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <header class="header">
+                <div class="header-left">
+                    <button class="menu-toggle" id="menuToggle">☰</button>
+                    <div class="header-title">
+                        <h1>Welcome Back! 👋</h1>
+                        <p>Here's what's happening with your documents today</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-icon" title="Notifications">🔔</button>
+                    <button class="btn-icon" title="Search">🔍</button>
+                </div>
+            </header>
+
+            <!-- Stats Grid -->
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon blue">📄</div>
+                        <span class="stat-badge success">+12%</span>
+                    </div>
+                    <div class="stat-value">1,234</div>
+                    <div class="stat-label">Total Documents</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon green">💬</div>
+                        <span class="stat-badge success">+8%</span>
+                    </div>
+                    <div class="stat-value">3,456</div>
+                    <div class="stat-label">Chat Conversations</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon orange">⚡</div>
+                        <span class="stat-badge success">+5%</span>
+                    </div>
+                    <div class="stat-value">89%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon red">💾</div>
+                        <span class="stat-badge danger">-3%</span>
+                    </div>
+                    <div class="stat-value">45 GB</div>
+                    <div class="stat-label">Storage Used</div>
+                </div>
+            </section>
+
+            <!-- Recent Activity -->
+            <section class="activity-section">
+                <div class="section-header">
+                    <h2>Recent Activity</h2>
+                    <a href="#" class="btn-view-all">View All →</a>
+                </div>
+                <div class="activity-list">
+                    <div class="activity-item">
+                        <div class="activity-icon blue">📤</div>
+                        <div class="activity-content">
+                            <h4>Document Uploaded</h4>
+                            <p>quarterly_report_Q4.pdf was uploaded successfully</p>
+                        </div>
+                        <span class="activity-time">2 mins ago</span>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon green">💬</div>
+                        <div class="activity-content">
+                            <h4>Chat Session Completed</h4>
+                            <p>Query about financial data was answered</p>
+                        </div>
+                        <span class="activity-time">15 mins ago</span>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon orange">📊</div>
+                        <div class="activity-content">
+                            <h4>Report Generated</h4>
+                            <p>Monthly analytics report is ready</p>
+                        </div>
+                        <span class="activity-time">1 hour ago</span>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon red">🗑️</div>
+                        <div class="activity-content">
+                            <h4>Document Deleted</h4>
+                            <p>old_backup_2023.json was removed</p>
+                        </div>
+                        <span class="activity-time">3 hours ago</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section>
+                <div class="section-header">
+                    <h2>Quick Actions</h2>
+                </div>
+                <div class="quick-actions">
+                    <a href="/upload" class="action-card">
+                        <div class="action-icon">📤</div>
+                        <h3>Upload Document</h3>
+                        <p>Add new files to your library</p>
+                    </a>
+                    <a href="/chat" class="action-card">
+                        <div class="action-icon">💬</div>
+                        <h3>Start Chat</h3>
+                        <p>Ask questions about your docs</p>
+                    </a>
+                    <a href="/reports" class="action-card">
+                        <div class="action-icon">📊</div>
+                        <h3>Generate Report</h3>
+                        <p>Create analytics reports</p>
+                    </a>
+                    <a href="/settings" class="action-card">
+                        <div class="action-icon">⚙️</div>
+                        <h3>Settings</h3>
+                        <p>Configure your preferences</p>
+                    </a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script th:inline="javascript">
+        // Check authentication
+        if (!sessionStorage.getItem('token')) {
+            window.location.href = '/login';
+        }
+
+        // Load user info
+        const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+        if (user.name) {
+            document.getElementById('userName').textContent = user.name;
+            const initials = user.name.split(' ').map(n => n[0]).join('');
+            document.getElementById('userAvatar').textContent = initials;
+        }
+        if (user.role) {
+            document.getElementById('userRole').textContent = user.role;
+        }
+
+        // Mobile menu toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        });
+
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                sessionStorage.clear();
+                window.location.href = '/login';
+            }
+        });
+
+        // Load dashboard stats (example)
+        fetch('/api/dashboard/stats')
+            .then(response => response.json())
+            .then(data => {
+                // Update stats if API returns data
+                console.log('Dashboard stats loaded', data);
+            })
+            .catch(error => {
+                console.log('Using default stats');
+            });
+    </script>
+</body>
+</html>

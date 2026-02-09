@@ -1,0 +1,68 @@
+[
+  {
+    "state_waqf_board": "Andaman And Nicobar Islands",
+    "waqf_property_initiated_for_uploading": 58,
+    "makers_submitted": 0,
+    "checkers_submitted": 1,
+    "approvers_approved": 147,
+    "rejected_property": 7,
+    "pending_for_approval": 1,
+    "total_no_of_waqf_property_initiated_till_date": 213,
+    "text": "Andaman And Nicobar Islands has 58 waqf properties initiated for uploading, 0 makers submitted, 1 checker submitted, 147 approvals, 7 rejected properties, 1 pending approval, and 213 total waqf properties till date."
+  },
+  {
+    "state_waqf_board": "Andhra Pradesh",
+    "waqf_property_initiated_for_uploading": 181,
+    "makers_submitted": 97,
+    "checkers_submitted": 30,
+    "approvers_approved": 11041,
+    "rejected_property": 62,
+    "pending_for_approval": 30,
+    "total_no_of_waqf_property_initiated_till_date": 11411,
+    "text": "Andhra Pradesh has 181 waqf properties initiated for uploading, 97 makers submitted, 30 checkers submitted, 11041 approvals, 62 rejected properties, 30 pending approval, and 11411 total waqf properties till date."
+  },
+  {
+    "state_waqf_board": "Arunachal Pradesh",
+    "waqf_property_initiated_for_uploading": 0,
+    "makers_submitted": 0,
+    "checkers_submitted": 0,
+    "approvers_approved": 0,
+    "rejected_property": 0,
+    "pending_for_approval": 0,
+    "total_no_of_waqf_property_initiated_till_date": 0,
+    "text": "Arunachal Pradesh has no waqf properties initiated, submitted, approved, rejected, or pending."
+  },
+  {
+    "state_waqf_board": "Assam",
+    "waqf_property_initiated_for_uploading": 65,
+    "makers_submitted": 416,
+    "checkers_submitted": 0,
+    "approvers_approved": 171,
+    "rejected_property": 18,
+    "pending_for_approval": 0,
+    "total_no_of_waqf_property_initiated_till_date": 670,
+    "text": "Assam has 65 waqf properties initiated for uploading, 416 makers submitted, 171 approvals, 18 rejected properties, and 670 total waqf properties till date."
+  },
+  {
+    "state_waqf_board": "Bihar Shia",
+    "waqf_property_initiated_for_uploading": 332,
+    "makers_submitted": 29,
+    "checkers_submitted": 0,
+    "approvers_approved": 4775,
+    "rejected_property": 67,
+    "pending_for_approval": 0,
+    "total_no_of_waqf_property_initiated_till_date": 5203,
+    "text": "Bihar Shia has 332 waqf properties initiated for uploading, 29 makers submitted, 4775 approvals, 67 rejected properties, and 5203 total waqf properties till date."
+  },
+  {
+    "state_waqf_board": "Bihar Sunni",
+    "waqf_property_initiated_for_uploading": 1151,
+    "makers_submitted": 1973,
+    "checkers_submitted": 30,
+    "approvers_approved": 6466,
+    "rejected_property": 795,
+    "pending_for_approval": 30,
+    "total_no_of_waqf_property_initiated_till_date": 10415,
+    "text": "Bihar Sunni has 1151 waqf properties initiated for uploading, 1973 makers submitted, 6466 approvals, 795 rejected properties, and 10415 total waqf properties till date."
+  }
+]
