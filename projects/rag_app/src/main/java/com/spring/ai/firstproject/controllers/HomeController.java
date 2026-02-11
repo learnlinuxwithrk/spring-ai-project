@@ -57,40 +57,40 @@ public class HomeController {
 		this.vectorStore = vectorStore;
 	}
 
-	@GetMapping("/")
-	public String loginPage() {
-		return "login";
-	}
-	
-	@GetMapping("/login")
-	public String loginPageNew() {
-		return "login";
-	}
-	
-	 @GetMapping("/dashboard")
-	    public String dashboardPage() {
-	        return "dashboard";
-	    }
+//	@GetMapping("/")
+//	public String loginPage() {
+//		return "login";
+//	}
+//	
+//	@GetMapping("/login")
+//	public String loginPageNew() {
+//		return "login";
+//	}
+//	
+//	 @GetMapping("/dashboard")
+//	    public String dashboardPage() {
+//	        return "dashboard";
+//	    }
 
-	 @GetMapping("/chat")
+	 @GetMapping("/")
 	    public String chatPage() {
-	        return "chat-integrated";
+	        return "chat-enhanced";
 	    }
 	 
 	  @GetMapping("/upload")
 	    public String uploadPage() {
-	        return "upload-integrated";
+	        return "upload-enhanced";
 	    }
 	  
-	  @GetMapping("/reports")
-	    public String reportsPage() {
-	        return "reports";
-	    }
-	    
-	    @GetMapping("/settings")
-	    public String settingsPage() {
-	        return "settings";
-	    }
+//	  @GetMapping("/reports")
+//	    public String reportsPage() {
+//	        return "reports";
+//	    }
+//	    
+//	    @GetMapping("/settings")
+//	    public String settingsPage() {
+//	        return "settings";
+//	    }
 	    
 	@GetMapping("/answerme")
 	public ResponseEntity<StreamingResponseBody> streamChat(@RequestParam("q") String q) {

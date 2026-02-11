@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Chat - DocuChat AI</title>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+	<style>
+		:root {
+			--primary: #667eea;
+			--secondary: #764ba2;
+			--dark: #1a1a1a;
+			--darker: #0d0d0d;
+			--light: #ffffff;
+			--gray: #8e8e93;
+			--border: #2d2d2d;
+			--hover: #2a2a2a;
+			--success: #10b981;
+			--code-bg: #1e1e1e;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+			background: var(--darker);
+			color: var(--light);
+			overflow: hidden;
+		}
+
+		.app-container {
+			display: flex;
+			height: 100vh;
+		}
+
+		/* Sidebar */
+		.sidebar {
+			width: 280px;
+			background: var(--dark);
+			border-right: 1px solid var(--border);
+			padding: 20px;
+			display: flex;
+			flex-direction: column;
+			position: fixed;
+			height: 100vh;
+			left: 0;
+			top: 0;
+			z-index: 1000;
+			transition: transform 0.3s ease;
+		}
+
+		.sidebar.hidden {
+			transform: translateX(-100%);
+		}
+
+		.logo-section {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			margin-bottom: 30px;
+			padding: 10px;
+		}
+
+		.logo-icon {
+			width: 32px;
+			height: 32px;
+			background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+			border-radius: 8px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 18px;
+		}
+
+		.logo-text h2 {
+			font-size: 16px;
+			font-weight: 600;
+			color: var(--light);
+		}
+
+		.nav-menu {
+			list-style: none;
+			flex: 1;
+		}
+
+		.nav-item {
+			margin-bottom: 4px;
+		}
+
+		.nav-link {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 10px 12px;
+			color: var(--gray);
+			text-decoration: none;
+			border-radius: 8px;
+			transition: all 0.2s;
+			font-size: 14px;
+			font-weight: 500;
+		}
+
+		.nav-link:hover {
+			background: var(--hover);
+			color: var(--light);
+		}
+
+		.nav-link.active {
+			background: var(--hover);
+			color: var(--light);
+		}
+
+		.nav-icon {
+			font-size: 18px;
+			width: 20px;
+			text-align: center;
+		}
+
+		.user-section {
+			margin-top: auto;
+			padding: 12px;
+			background: var(--hover);
+			border-radius: 8px;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.user-avatar {
+			width: 32px;
+			height: 32px;
+			background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: 600;
+			font-size: 12px;
+		}
+
+		.user-info h4 {
+			font-size: 13px;
+			font-weight: 500;
+			color: var(--light);
+		}
+
+		.user-info p {
+			font-size: 11px;
+			color: var(--gray);
+		}
+
+		/* Main Chat Area */
+		.chat-container {
+			flex: 1;
+			margin-left: 280px;
+			display: flex;
+			flex-direction: column;
+			height: 100vh;
+			background: var(--darker);
+		}
+
+		/* Chat Header */
+		.chat-header {
+			padding: 16px 24px;
+			background: var(--dark);
+			border-bottom: 1px solid var(--border);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-top: 10px;
+		}
+
+
+		/* ============================= */
+		/* Header Styling */
+		/* ============================= */
+		.header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 40px;
+			justify-content: center;
+			margin-top: 50px;
+		}
+
+		.header-left {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.greeting h1 {
+			font-size: 18px;
+			font-weight: 500;
+		}
+
+		.menu-toggle {
+			background: none;
+			border: none;
+			color: var(--light);
+			font-size: 20px;
+			cursor: pointer;
+			margin-right: 15px;
+		}
+
+		/* ============================= */
+		/* Main Content */
+		/* ============================= */
+		.main-content {
+			flex: 1;
+			overflow-y: auto;
+			padding: 40px;
+		}
+
+		.upload-container {
+			display: flex;
+			justify-content: center;
+		}
+
+		.upload-card {
+			width: 100%;
+			max-width: 650px;
+			background: var(--dark);
+			border: 1px solid var(--border);
+			border-radius: 20px;
+			padding: 30px;
+		}
+
+		/* ============================= */
+		/* Form Styling */
+		/* ============================= */
+		.form-group {
+			margin-bottom: 25px;
+		}
+
+		label {
+			display: block;
+			font-size: 14px;
+			margin-bottom: 8px;
+			font-weight: 500;
+		}
+
+		.required {
+			color: #ef4444;
+		}
+
+		select {
+			width: 100%;
+			padding: 12px;
+			border-radius: 10px;
+			border: 1px solid var(--border);
+			background: var(--hover);
+			color: var(--light);
+			font-size: 14px;
+		}
+
+		/* ============================= */
+		/* File Upload */
+		/* ============================= */
+		.file-upload-wrapper {
+			position: relative;
+		}
+
+		.file-upload-input {
+			position: absolute;
+			left: -9999px;
+		}
+
+		.file-upload-label {
+			padding: 60px 20px;
+			border: 2px dashed rgba(255, 255, 255, 0.3);
+			border-radius: 16px;
+			text-align: center;
+			cursor: pointer;
+			transition: 0.3s;
+		}
+
+		.file-upload-label:hover {
+			border-color: var(--primary);
+			background: rgba(102, 126, 234, 0.1);
+		}
+
+		.upload-icon {
+			font-size: 40px;
+			margin-bottom: 10px;
+		}
+
+		.main-text {
+			font-size: 14px;
+		}
+
+		.sub-text {
+			font-size: 12px;
+			color: var(--gray);
+		}
+
+		.file-info {
+			display: none;
+			margin-top: 15px;
+			padding: 15px;
+			background: rgba(16, 185, 129, 0.1);
+			border: 1px solid rgba(16, 185, 129, 0.3);
+			border-radius: 10px;
+		}
+
+		.file-info.show {
+			display: block;
+		}
+
+		.file-name {
+			font-weight: 600;
+			color: var(--success);
+		}
+
+		.file-size {
+			font-size: 12px;
+			color: var(--gray);
+			margin-bottom: 8px;
+		}
+
+		.remove-file {
+			background: none;
+			border: none;
+			color: #ef4444;
+			font-size: 12px;
+			cursor: pointer;
+		}
+
+		/* ============================= */
+		/* Button */
+		/* ============================= */
+		.submit-btn {
+			width: 100%;
+			padding: 14px;
+			border: none;
+			border-radius: 12px;
+			font-weight: 600;
+			font-size: 14px;
+			background: linear-gradient(135deg, var(--primary), var(--secondary));
+			color: white;
+			cursor: pointer;
+			transition: 0.3s;
+		}
+
+		.submit-btn:hover {
+			transform: translateY(-2px);
+		}
+
+		.loader {
+			display: none;
+			width: 16px;
+			height: 16px;
+			border: 3px solid rgba(255, 255, 255, 0.3);
+			border-top: 3px solid white;
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+			margin-left: 8px;
+		}
+
+		.loader.show {
+			display: inline-block;
+		}
+
+		@keyframes spin {
+			0% {
+				transform: rotate(0deg);
+			}
+
+			100% {
+				transform: rotate(360deg);
+			}
+		}
+
+		/* ============================= */
+		/* Alerts */
+		/* ============================= */
+		.alert {
+			display: none;
+			padding: 12px;
+			border-radius: 10px;
+			margin-bottom: 20px;
+			font-size: 13px;
+		}
+
+		.alert-success {
+			background: rgba(16, 185, 129, 0.1);
+			border: 1px solid rgba(16, 185, 129, 0.3);
+			color: #10b981;
+		}
+
+		.alert-error {
+			background: rgba(239, 68, 68, 0.1);
+			border: 1px solid rgba(239, 68, 68, 0.3);
+			color: #ef4444;
+		}
+
+
+
+
+
+		/* Welcome Screen */
+		.welcome-screen {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			height: 100%;
+			text-align: center;
+			padding: 40px;
+		}
+
+		.welcome-screen h2 {
+			font-size: 24px;
+			font-weight: 400;
+			color: var(--light);
+			margin-bottom: 40px;
+		}
+
+		.suggestion-buttons {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			justify-content: center;
+			max-width: 600px;
+		}
+
+		.suggestion-btn {
+			padding: 8px 16px;
+			background: var(--hover);
+			border: 1px solid var(--border);
+			color: var(--gray);
+			border-radius: 20px;
+			cursor: pointer;
+			font-size: 13px;
+			font-family: 'Inter', sans-serif;
+			transition: all 0.2s;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.suggestion-btn:hover {
+			background: var(--border);
+			color: var(--light);
+		}
+
+
+
+
+		@keyframes typing {
+
+			0%,
+			60%,
+			100% {
+				transform: translateY(0);
+			}
+
+			30% {
+				transform: translateY(-6px);
+			}
+		}
+
+		/* ============================= */
+		/* ALIGNMENT FIXES ONLY */
+		/* ============================= */
+
+		/* Make chat container flexible */
+		.chat-container {
+			flex: 1;
+			margin-left: 280px;
+			display: flex;
+			flex-direction: column;
+			height: 100vh;
+			transition: margin-left 0.3s ease;
+		}
+
+		/* When sidebar hidden, remove left margin */
+		.sidebar.hidden+.chat-container {
+			margin-left: 0;
+		}
+
+
+		/* Fix greeting alignment */
+		.greeting {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		/* Proper spacing inside main content */
+		.main-content {
+			flex: 1;
+			overflow-y: auto;
+			padding: 40px;
+		}
+
+		/* Center upload card properly */
+		.upload-container {
+			width: 100%;
+			display: flex;
+			justify-content: center;
+		}
+
+		/* Mobile alignment fix */
+		@media (max-width: 1024px) {
+			.sidebar {
+				transform: translateX(-100%);
+			}
+
+			.chat-container {
+				margin-left: 0;
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<div class="app-container">
+		<!-- Sidebar -->
+		<aside class="sidebar" id="sidebar">
+			<div class="logo-section">
+				<div class="logo-icon">🤖</div>
+				<div class="logo-text">
+					<h2>DoChat AI</h2>
+				</div>
+			</div>
+
+			<nav>
+				<ul class="nav-menu">
+					<!--	<li class="nav-item">
+						<a href="/dashboard" class="nav-link">
+							<span class="nav-icon">📊</span>
+							Dashboard
+						</a>
+					</li> -->
+					<li class="nav-item">
+						<a href="/upload" class="nav-link active">
+							<span class="nav-icon">📤</span>
+							Upload Document
+						</a>
+					</li>
+					<li class="nav-item">
+						<a href="/" class="nav-link active">
+							<span class="nav-icon">💬</span>
+							Chat
+						</a>
+					</li>
+
+				</ul>
+			</nav>
+
+			<div class="user-section">
+				<div class="user-avatar" id="userAvatar">RK</div>
+				<div class="user-info">
+					<h4 id="userName">Rajjan Kumar</h4>
+					<p>Free plan</p>
+				</div>
+			</div>
+		</aside>
+
+		<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+		<!-- Chat Container -->
+		<div class="chat-container">
+			<!-- Header -->
+			<div class="chat-header">
+				<div class="header-left">
+					<div class="greeting">
+						<span class="greeting-icon">✨</span>
+						<h1 id="greetingText">Afternoon, Rajjan Kumar</h1>
+					</div>
+				</div>
+				<div class="header-actions">
+					
+				</div>
+			</div>
+			<!-- Main Content -->
+			<main class="main-content" id="mainContent">
+				<header class="header">
+					<div class="header-left">
+						<div class="header-title">
+							<h1>Upload Documents 📤</h1>
+							<p>Add files to your document library</p>
+						</div>
+					</div>
+				</header>
+
+				<div class="upload-container">
+					<div class="upload-card">
+						<!-- Alerts -->
+						<div id="alertSuccess" class="alert alert-success">
+							<span>✅</span>
+							<span id="successMessage"></span>
+						</div>
+						<div id="alertError" class="alert alert-error">
+							<span>❌</span>
+							<span id="errorMessage"></span>
+						</div>
+
+						<form id="uploadForm" th:action="@{/doupload}" method="post" enctype="multipart/form-data">
+							<!-- Document Type -->
+							<div class="form-group">
+								<label for="documentType">
+									Document Type <span class="required">*</span>
+								</label>
+								<select id="documentType" name="type" required>
+									<option value="">Select document type</option>
+									<option value="pdf">PDF Document</option>
+									<option value="text">Text Document</option>
+									<option value="json">JSON Document</option>
+								</select>
+							</div>
+
+							<!-- File Upload -->
+							<div class="form-group">
+								<label for="fileInput">
+									Select File <span class="required">*</span>
+								</label>
+								<div class="file-upload-wrapper">
+									<input type="file" id="fileInput" name="file" class="file-upload-input"
+										accept=".pdf,.txt,.json" required>
+									<label for="fileInput" id="fileLabel" class="file-upload-label">
+										<div class="upload-icon">📁</div>
+										<div class="upload-text">
+											<p class="main-text">Drop your file here or click to browse</p>
+											<p class="sub-text">Supports: PDF, TXT, JSON (Max 10MB)</p>
+										</div>
+									</label>
+								</div>
+
+								<!-- File Info -->
+								<div id="fileInfo" class="file-info">
+									<div class="file-name" id="fileName"></div>
+									<div class="file-size" id="fileSize"></div>
+									<button type="button" class="remove-file" id="removeFile">Remove file</button>
+								</div>
+							</div>
+
+							<!-- Submit Button -->
+							<button type="submit" class="submit-btn" id="submitBtn">
+								<span id="btnText">Upload Document</span>
+								<div class="loader" id="loader"></div>
+							</button>
+						</form>
+					</div>
+
+
+				</div>
+			</main>
+
+
+
+		</div>
+	</div>
+
+	<script>
+		let userId = localStorage.getItem("userId");
+		if (!userId) {
+			userId = crypto.randomUUID();
+			localStorage.setItem("userId", userId);
+		}
+
+		const form = document.getElementById("uploadForm");
+		const submitBtn = document.getElementById("submitBtn");
+		const loader = document.getElementById("loader");
+		const btnText = document.getElementById("btnText");
+
+		const alertSuccess = document.getElementById("alertSuccess");
+		const alertError = document.getElementById("alertError");
+		const successMessage = document.getElementById("successMessage");
+		const errorMessage = document.getElementById("errorMessage");
+
+		form.addEventListener("submit", async function (e) {
+			e.preventDefault();
+
+			// Hide previous alerts
+			alertSuccess.style.display = "none";
+			alertError.style.display = "none";
+
+			// Show loader
+			loader.classList.add("show");
+			btnText.innerText = "Processing...";
+			submitBtn.disabled = true;
+
+			try {
+				const formData = new FormData(form);
+
+				const response = await fetch("/doupload", {
+					method: "POST",
+					body: formData
+				});
+
+				if (!response.ok) {
+					throw new Error("Upload failed");
+				}
+
+				const result = await response.text(); // or .json() if backend returns JSON
+
+				// Hide loader
+				loader.classList.remove("show");
+				btnText.innerText = "Upload Document";
+				submitBtn.disabled = false;
+
+				// Show success
+				successMessage.innerText = result || "Document processed successfully!";
+				alertSuccess.style.display = "block";
+
+				form.reset();
+
+			} catch (error) {
+				loader.classList.remove("show");
+				btnText.innerText = "Upload Document";
+				submitBtn.disabled = false;
+
+				errorMessage.innerText = "Document processing failed. Please try again.";
+				alertError.style.display = "block";
+			}
+		});
+	</script>
+
+
+
+</body>
+
+</html>
