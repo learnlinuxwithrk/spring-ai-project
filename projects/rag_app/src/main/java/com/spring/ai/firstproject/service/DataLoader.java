@@ -4,6 +4,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Path;
 import java.util.List;
 
 public interface DataLoader {
@@ -15,6 +16,8 @@ public interface DataLoader {
 	List<Document> ingestJsonIntoVectorStore(VectorStore vectorStore);
 	List<Document> ingestPdfIntoVectorStore(VectorStore vectorStore);
 	
-	List<Document> ingestDocument(MultipartFile file,VectorStore vectorStore);
+	//List<Document> ingestDocument(MultipartFile file,VectorStore vectorStore);
+    List<Document> ingestDocument(Path filePath, VectorStore vectorStore);
+
 
 }

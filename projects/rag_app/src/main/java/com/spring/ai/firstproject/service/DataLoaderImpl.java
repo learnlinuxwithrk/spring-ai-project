@@ -6,6 +6,7 @@ import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -198,49 +201,57 @@ public class DataLoaderImpl implements DataLoader {
 
 	}
 
-	public List<Document> ingestDocument(MultipartFile file, VectorStore vectorStore) {
+    public List<Document> ingestDocument(Path filePath, VectorStore vectorStore) {
 
-		try {
+        try {
 
-			if (file == null || file.isEmpty()) {
-				throw new IllegalArgumentException("Uploaded file is empty.");
-			}
+            if (filePath == null || !Files.exists(filePath)) {
+                throw new IllegalArgumentException("Uploaded file is invalid.");
+            }
 
-			String filename = file.getOriginalFilename();
-			if (filename == null) {
-				throw new IllegalArgumentException("File name is invalid.");
-			}
+            String filename = filePath.getFileName().toString().toLowerCase();
+            List<Document> documents;
 
-			filename = filename.toLowerCase();
-			List<Document> documents;
+            if (filename.endsWith(".pdf")) {
+                documents = ingestPdf(filePath);
+            }
+            else if (filename.endsWith(".txt") || filename.endsWith(".json")) {
+                documents = ingestText(filePath);
+            }
+            else {
+                throw new IllegalArgumentException("Unsupported file type: " + filename);
+            }
 
-			if (filename.endsWith(".pdf")) {
-				documents = ingestPdf(file);
-			} else if (filename.endsWith(".txt") || filename.endsWith(".json")) {
-				documents = ingestText(file);
-			} else {
-				throw new IllegalArgumentException("Unsupported file type: " + filename);
-			}
+            log.info("Original documents count: {}", documents.size());
 
-			log.info("Original documents count: {}", documents.size());
+            // 🔥 Split before embedding
+            List<Document> chunks = splitDocuments(documents);
 
-			// 🔥 IMPORTANT: Split before embedding
-			List<Document> chunks = splitDocuments(documents);
+            log.info("Total chunks created: {}", chunks.size());
 
-			log.info("Total chunks created: {}", chunks.size());
+            vectorStore.add(chunks);
 
-			vectorStore.add(chunks);
+            log.info("Successfully inserted {} chunks into vector store.", chunks.size());
 
-			log.info("Successfully inserted {} chunks into vector store.", chunks.size());
+            return chunks;
 
-			return chunks;
+        } catch (Exception e) {
+            log.error("Document ingestion failed", e);
+            throw new RuntimeException("Ingestion failed: " + e.getMessage());
+        }
+    }
 
-		} catch (Exception e) {
-			log.error("Document ingestion failed", e);
-			throw new RuntimeException("Ingestion failed: " + e.getMessage());
-		}
+    private List<Document> ingestText(Path filePath) throws IOException {
 
-	}
+        String text = Files.readString(filePath, StandardCharsets.UTF_8);
+
+        Document doc = new Document(text);
+
+        doc.getMetadata().put("source", "uploaded-text");
+        doc.getMetadata().put("filename", filePath.getFileName().toString());
+
+        return List.of(doc);
+    }
 
 	/**
 	 * ================================ SAFE DOCUMENT SPLITTER
@@ -277,68 +288,52 @@ public class DataLoaderImpl implements DataLoader {
 		return result;
 	}
 
-	private List<Document> ingestText(MultipartFile file) throws IOException {
+    private List<Document> ingestPdf(Path filePath) throws Exception {
 
-		String text = new String(file.getBytes(), StandardCharsets.UTF_8);
+        Resource resource = new FileSystemResource(filePath);
 
-		Document doc = new Document(text);
-		doc.getMetadata().put("source", "uploaded-text");
-		doc.getMetadata().put("filename", file.getOriginalFilename());
+        PagePdfDocumentReader reader =
+                new PagePdfDocumentReader(
+                        resource,
+                        PdfDocumentReaderConfig.builder()
+                                .withPageExtractedTextFormatter(
+                                        ExtractedTextFormatter.builder().build()
+                                )
+                                .build()
+                );
 
-		return List.of(doc);
-	}
+        List<Document> rawDocs = reader.read();
 
-	private List<Document> ingestPdf(MultipartFile file) throws Exception {
+        System.out.println("File Name: " + filePath.getFileName());
 
-	    Resource resource = new InputStreamResource(file.getInputStream());
+        List<Document> cleanDocs = new ArrayList<>();
 
-	    PagePdfDocumentReader reader =
-	            new PagePdfDocumentReader(
-	                    resource,
-	                    PdfDocumentReaderConfig.builder()
-	                            .withPageExtractedTextFormatter(
-	                                    ExtractedTextFormatter.builder().build()
-	                            )
-	                            .build()
-	            );
+        int pageNumber = 1;
 
-	    List<Document> rawDocs = reader.read();
+        for (Document rawDoc : rawDocs) {
 
-	    System.out.println("File Name: " + file.getOriginalFilename());
+            String text = rawDoc.getText();
 
-	    List<Document> cleanDocs = new ArrayList<>();
+            if (text == null || text.isBlank()) {
+                continue;
+            }
 
-	    int pageNumber = 1;
+            Map<String, Object> metadata = new HashMap<>();
 
-	    for (Document rawDoc : rawDocs) {
+            metadata.put("source", "uploaded-pdf");
+            metadata.put("filename", filePath.getFileName().toString());
+            metadata.put("page_number", pageNumber++);
 
-	        String text = rawDoc.getText();
+            Document cleanDoc = new Document(text, metadata);
 
-	        if (text == null || text.isBlank()) {
-	            continue; // skip empty pages
-	        }
+            cleanDocs.add(cleanDoc);
+        }
 
-	        Map<String, Object> metadata = new HashMap<>();
+        System.out.println("Total Clean Pages: " + cleanDocs.size());
 
-	        // SAFE metadata only
-	        metadata.put("source", "uploaded-pdf");
-	        metadata.put("filename",
-	                file.getOriginalFilename() != null
-	                        ? file.getOriginalFilename()
-	                        : "unknown.pdf");
+        return cleanDocs;
+    }
 
-	        metadata.put("page_number", pageNumber++);
-
-	        // Create NEW clean document (important!)
-	        Document cleanDoc = new Document(text, metadata);
-
-	        cleanDocs.add(cleanDoc);
-	    }
-
-	    System.out.println("Total Clean Pages: " + cleanDocs.size());
-
-	    return cleanDocs;
-	}
 
 //	private List<Document> ingestPdf(MultipartFile file) throws Exception {
 //

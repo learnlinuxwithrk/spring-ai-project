@@ -23,7 +23,10 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -132,7 +135,6 @@ public class ChatServiceImpl implements ChatService {
     }
     
     @Override
-    //@Cacheable(value = "chatResponses", key = "#userQuery")
     public String getResponse(String userQuery,String userId) {
     	
     	var advisor = RetrievalAugmentationAdvisor.builder()
@@ -144,7 +146,7 @@ public class ChatServiceImpl implements ChatService {
     	        .documentRetriever(
     	                VectorStoreDocumentRetriever.builder()
     	                        .vectorStore(vectorStore)
-    	                        .topK(40)
+    	                        .topK(3)
     	                        .similarityThreshold(0.15)
     	                        .build()
     	        )
@@ -165,41 +167,69 @@ public class ChatServiceImpl implements ChatService {
                 .call()
                 .content();
     }
-//
-//        var advisor = RetrievalAugmentationAdvisor.builder()
-//
-//                .queryTransformers(
-//                        RewriteQueryTransformer.builder()
-//                                .chatClientBuilder(chatClient.mutate().clone())
-//                                .build(),
-//                        TranslationQueryTransformer.builder().chatClientBuilder(chatClient.mutate().clone()).targetLanguage("english").build()
-//
-//                )
-//                .queryExpander(MultiQueryExpander.builder().chatClientBuilder(chatClient.mutate().clone()).numberOfQueries(3).build())
-//                .documentRetriever(
-//                        VectorStoreDocumentRetriever.builder()
-//                                .vectorStore(vectorStore)
-//                                .topK(3)
-//                                .similarityThreshold(0.3)
-//                                .build()
-//                )
-//                .documentJoiner(new ConcatenationDocumentJoiner())
-//                .queryAugmenter(ContextualQueryAugmenter.builder().build())
-////                .documentPostProcessors()
-//
-//
-//                .build();
 
 
-        //actual call to llm
+    public Flux<String> streamResponse(String userQuery, String userId) {
+        var advisor = buildAdvisor(userId);
 
-//        return chatClient
-//                .prompt()
-//                .advisors(advisor)
-//                .user(userQuery)
-//                .call()
-//                .content();
-//    }
+        return Mono.fromCallable(() -> {
+                    // This is blocking, so we execute on boundedElastic
+                    return chatClient
+                            .prompt()
+                            .advisors(advisor)
+                            .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, userId))
+                            .user(userQuery)
+                            .call()    // blocking
+                            .content();
+                })
+                .subscribeOn(Schedulers.boundedElastic()) // move to a thread that allows blocking
+                .flux(); // convert Mono<String> to Flux<String> for SSE
+    }
+
+
+    public Flux<String> streamResponse1(String userQuery, String userId) {
+
+        var advisor = buildAdvisor(userId);
+
+        return chatClient
+                .prompt()
+                .advisors(advisor)
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, userId))
+                .user(userQuery)
+                .stream()   // VERY IMPORTANT
+                .content(); // returns Flux<String>
+    }
+
+    private RetrievalAugmentationAdvisor buildAdvisor(String userId) {
+
+
+
+        return RetrievalAugmentationAdvisor.builder()
+                .queryTransformers(
+                        RewriteQueryTransformer.builder()
+                                .chatClientBuilder(chatClient.mutate().clone())
+                                .build()
+                )
+                .queryExpander(MultiQueryExpander.builder()
+                        .chatClientBuilder(chatClient.mutate()) // just mutate, no clone
+                        .numberOfQueries(10)
+                        .includeOriginal(false)
+                        .build())
+
+                .documentRetriever(
+                        VectorStoreDocumentRetriever.builder()
+                                .vectorStore(vectorStore)
+                                .topK(50)
+                                .similarityThreshold(0.15)
+                                .build()
+                )
+                .documentJoiner(new ConcatenationDocumentJoiner())
+                .queryAugmenter(ContextualQueryAugmenter.builder().build())
+                .documentPostProcessors()
+                .build();
+    }
+
+
 
 
 }

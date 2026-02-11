@@ -31,35 +31,35 @@ class FirstProjectApplicationTests {
 	@Autowired
 	private VectorStore vectorStore;
 
-//    @Test
-//    void saveDataToVectorDatabase(){
-//        System.out.println("saving data to database");
-//        this.chatService.saveData(Helper.getData());
-//        System.out.println("data is saved successfully");
-//    }
+    @Test
+    void saveDataToVectorDatabase(){
+        System.out.println("saving data to database");
+        this.chatService.saveData(Helper.getData());
+        System.out.println("data is saved successfully");
+    }
 //    
 
-	@Test
-	void testDataLoader() {
-		
-		
-
-		//Import JSON File
-		var documents = dataLoader.ingestJsonIntoVectorStore(vectorStore);
-		
-		//import PDF Docs
-		//var documents = dataLoader.ingestPdfIntoVectorStore(vectorStore);
-		
-		//System.out.println("JSON COUNT " + docCount);
-//        var documents = dataLoader.loadDocumentsFromJson();       
-        //System.out.println("Document Size : "+documents.size());
+//	@Test
+//	void testDataLoader() {
 //
-        documents.forEach(item -> {          
-            System.out.println("ITEM "+item);
-        });
 //
-
-	}
+//
+//		//Import JSON File
+//		//var documents = dataLoader.ingestJsonIntoVectorStore(vectorStore);
+//
+//		//import PDF Docs
+//		//var documents = dataLoader.ingestPdfIntoVectorStore(vectorStore);
+//
+//		//System.out.println("JSON COUNT " + docCount);
+////        var documents = dataLoader.loadDocumentsFromJson();
+//        //System.out.println("Document Size : "+documents.size());
+////
+//        documents.forEach(item -> {          
+//            System.out.println("ITEM "+item);
+//        });
+////
+//
+//	}
 
 //    @Test
 //    void testPdfDataLoader() {

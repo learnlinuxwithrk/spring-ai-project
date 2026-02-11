@@ -527,7 +527,7 @@
 			<div class="logo-section">
 				<div class="logo-icon">🤖</div>
 				<div class="logo-text">
-					<h2>DoChat AI</h2>
+					<h2>MoMA AI Chatbot</h2>
 				</div>
 			</div>
 
@@ -603,7 +603,7 @@
 							<span id="errorMessage"></span>
 						</div>
 
-						<form id="uploadForm" th:action="@{/doupload}" method="post" enctype="multipart/form-data">
+                        <form id="uploadForm" enctype="multipart/form-data">
 							<!-- Document Type -->
 							<div class="form-group">
 								<label for="documentType">
@@ -659,70 +659,70 @@
 		</div>
 	</div>
 
-	<script>
-		let userId = localStorage.getItem("userId");
-		if (!userId) {
-			userId = crypto.randomUUID();
-			localStorage.setItem("userId", userId);
-		}
+    <script>
+        let userId = localStorage.getItem("userId");
+        if (!userId) {
+            userId = crypto.randomUUID();
+            localStorage.setItem("userId", userId);
+        }
 
-		const form = document.getElementById("uploadForm");
-		const submitBtn = document.getElementById("submitBtn");
-		const loader = document.getElementById("loader");
-		const btnText = document.getElementById("btnText");
+        const form = document.getElementById("uploadForm");
+        const submitBtn = document.getElementById("submitBtn");
+        const loader = document.getElementById("loader");
+        const btnText = document.getElementById("btnText");
 
-		const alertSuccess = document.getElementById("alertSuccess");
-		const alertError = document.getElementById("alertError");
-		const successMessage = document.getElementById("successMessage");
-		const errorMessage = document.getElementById("errorMessage");
+        const alertSuccess = document.getElementById("alertSuccess");
+        const alertError = document.getElementById("alertError");
+        const successMessage = document.getElementById("successMessage");
+        const errorMessage = document.getElementById("errorMessage");
 
-		form.addEventListener("submit", async function (e) {
-			e.preventDefault();
+        form.addEventListener("submit", async function (e) {
+            e.preventDefault();
 
-			// Hide previous alerts
-			alertSuccess.style.display = "none";
-			alertError.style.display = "none";
+            alertSuccess.style.display = "none";
+            alertError.style.display = "none";
 
-			// Show loader
-			loader.classList.add("show");
-			btnText.innerText = "Processing...";
-			submitBtn.disabled = true;
+            loader.classList.add("show");
+            btnText.innerText = "Processing...";
+            submitBtn.disabled = true;
 
-			try {
-				const formData = new FormData(form);
+            try {
+                const formData = new FormData(form);
 
-				const response = await fetch("/doupload", {
-					method: "POST",
-					body: formData
-				});
+                const response = await fetch("/doupload", {
+                    method: "POST",
+                    body: formData
+                });
 
-				if (!response.ok) {
-					throw new Error("Upload failed");
-				}
+                const result = await response.json(); // ✅ FIXED
 
-				const result = await response.text(); // or .json() if backend returns JSON
+                loader.classList.remove("show");
+                btnText.innerText = "Upload Document";
+                submitBtn.disabled = false;
 
-				// Hide loader
-				loader.classList.remove("show");
-				btnText.innerText = "Upload Document";
-				submitBtn.disabled = false;
+                if (result.success) {
+                    successMessage.innerText =
+                        result.message +
+                        " | Documents indexed: " + (result.docs || 0);
 
-				// Show success
-				successMessage.innerText = result || "Document processed successfully!";
-				alertSuccess.style.display = "block";
+                    alertSuccess.style.display = "block";
+                    form.reset();
+                } else {
+                    throw new Error(result.message);
+                }
 
-				form.reset();
+            } catch (error) {
+                loader.classList.remove("show");
+                btnText.innerText = "Upload Document";
+                submitBtn.disabled = false;
 
-			} catch (error) {
-				loader.classList.remove("show");
-				btnText.innerText = "Upload Document";
-				submitBtn.disabled = false;
+                errorMessage.innerText =
+                    error.message || "Document processing failed. Please try again.";
 
-				errorMessage.innerText = "Document processing failed. Please try again.";
-				alertError.style.display = "block";
-			}
-		});
-	</script>
+                alertError.style.display = "block";
+            }
+        });
+    </script>
 
 
 

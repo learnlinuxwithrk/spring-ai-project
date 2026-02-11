@@ -4,9 +4,23 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Chat - DocuChat AI</title>
+	<title>MoMA AI Chatbot</title>
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-	<style>
+    <!-- Markdown parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- HTML sanitizer -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+
+    <!-- Prism.js (syntax highlighting) -->
+    <link href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-java.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+
+
+    <style>
 		:root {
 			--primary: #667eea;
 			--secondary: #764ba2;
@@ -709,7 +723,7 @@
 			<div class="logo-section">
 				<div class="logo-icon">🤖</div>
 				<div class="logo-text">
-					<h2>DoChat AI</h2>
+					<h2>MoMA AI Chatbot</h2>
 				</div>
 			</div>
 
@@ -744,7 +758,7 @@
 							<span class="nav-icon">⚙️</span>
 							Settings
 						</a>
-					</li> 
+					</li>
 					<li class="nav-item">
 						<a href="#" class="nav-link" id="logoutBtn">
 							<span class="nav-icon">🚪</span>
@@ -804,7 +818,7 @@
 							<span>☕</span> Life stuff
 						</button>
 						<button class="suggestion-btn" onclick="sendSuggestion('💡 Claude\'s choice')">
-							<span>💡</span> Claude's choice
+							<span>💡</span> Ministry choice
 						</button>
 					</div>
 				</div>
@@ -826,277 +840,194 @@
 		</div>
 	</div>
 
-	<script th:inline="javascript">
-		// Auth check
-		if (!sessionStorage.getItem('token')) {
-			window.location.href = '/login';
-		}
+    <script>
+        /* ================================
+           Persistent User ID
+        ================================ */
+        let userId = localStorage.getItem("userId");
+        if (!userId) {
+            userId = crypto.randomUUID();
+            localStorage.setItem("userId", userId);
+        }
 
-		// Load user info
-		const user = JSON.parse(sessionStorage.getItem('user') || '{}');
-		if (user.name) {
-			document.getElementById('userName').textContent = user.name;
-			const initials = user.name.split(' ').map(n => n[0]).join('');
-			document.getElementById('userAvatar').textContent = initials;
+        /* ================================
+           DOM References
+        ================================ */
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const welcomeScreen = document.getElementById('welcomeScreen');
 
-			// Update greeting
-			const hour = new Date().getHours();
-			const greeting = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
-			document.getElementById('greetingText').textContent = `${greeting}, ${user.name}`;
-		}
+        let eventSource = null;
 
-		// Mobile menu
-		const menuToggle = document.getElementById('menuToggle');
-		const sidebar = document.getElementById('sidebar');
-		const sidebarOverlay = document.getElementById('sidebarOverlay');
+        /* ================================
+           Auto Resize Textarea
+        ================================ */
+        messageInput.addEventListener('input', () => {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+        });
 
-		menuToggle.addEventListener('click', () => {
-			sidebar.classList.toggle('active');
-			sidebarOverlay.classList.toggle('active');
-		});
+        /* ================================
+           Send On Enter
+        ================================ */
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
 
-		sidebarOverlay.addEventListener('click', () => {
-			sidebar.classList.remove('active');
-			sidebarOverlay.classList.remove('active');
-		});
+        sendBtn.addEventListener('click', sendMessage);
 
-		// Logout
-		document.getElementById('logoutBtn').addEventListener('click', (e) => {
-			e.preventDefault();
-			if (confirm('Are you sure you want to logout?')) {
-				sessionStorage.clear();
-				window.location.href = '/login';
-			}
-		});
+        /* ================================
+           Escape HTML (User Input Safety)
+        ================================ */
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
-		// Chat functionality
-		const chatMessages = document.getElementById('chatMessages');
-		const messageInput = document.getElementById('messageInput');
-		const sendBtn = document.getElementById('sendBtn');
-		const welcomeScreen = document.getElementById('welcomeScreen');
-
-		let conversationHistory = [];
-
-		// Auto-resize textarea
-		messageInput.addEventListener('input', function () {
-			this.style.height = 'auto';
-			this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-		});
-
-		// Send message on Enter (Shift+Enter for new line)
-		messageInput.addEventListener('keydown', function (e) {
-			if (e.key === 'Enter' && !e.shiftKey) {
-				e.preventDefault();
-				sendMessage();
-			}
-		});
-
-		sendBtn.addEventListener('click', sendMessage);
-
-		function sendSuggestion(text) {
-			messageInput.value = text;
-			sendMessage();
-		}
-
-		function sendMessage() {
-			const message = messageInput.value.trim();
-			if (!message) return;
-
-			// Hide welcome screen
-			if (welcomeScreen) {
-				welcomeScreen.style.display = 'none';
-			}
-
-			// Add user message
-			addUserMessage(message);
-			messageInput.value = '';
-			messageInput.style.height = 'auto';
-
-			// Show typing indicator
-			showTypingIndicator();
-
-			// Send to API
-			fetch('/api/chat/enhanced', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					message: message,
-					history: conversationHistory
-				})
-			})
-				.then(response => response.json())
-				.then(data => {
-					hideTypingIndicator();
-					const botResponse = data.response || 'Sorry, I could not process your request.';
-					addBotMessage(botResponse);
-
-					conversationHistory.push({
-						role: 'user',
-						content: message
-					}, {
-						role: 'assistant',
-						content: botResponse
-					});
-				})
-				.catch(error => {
-					hideTypingIndicator();
-					addBotMessage('Sorry, an error occurred. Please try again.');
-					console.error('Chat error:', error);
-				});
-		}
-
-		function addUserMessage(text) {
-			const messageDiv = document.createElement('div');
-			messageDiv.className = 'message user';
-
-			messageDiv.innerHTML = `
+        /* ================================
+           Add User Message
+        ================================ */
+        function addUserMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            messageDiv.innerHTML = `
                 <div class="message-header">
-                    <div class="message-avatar">${user.name?.split(' ').map(n => n[0]).join('') || 'U'}</div>
+                    <div class="message-avatar" aria-label="User">U</div>
                     <span class="message-author">You</span>
                 </div>
                 <div class="message-content">
                     <p>${escapeHtml(text)}</p>
                 </div>
             `;
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
 
-			chatMessages.appendChild(messageDiv);
-			chatMessages.scrollTop = chatMessages.scrollHeight;
-		}
-
-		function addBotMessage(text) {
-			const messageDiv = document.createElement('div');
-			messageDiv.className = 'message bot';
-
-			const formattedContent = formatBotResponse(text);
-
-			messageDiv.innerHTML = `
+        /* ================================
+           Add Bot Message
+        ================================ */
+        function addBotMessage() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            messageDiv.innerHTML = `
                 <div class="message-header">
-                    <div class="message-avatar">🤖</div>
+                    <div class="message-avatar" aria-label="Assistant">🤖</div>
                     <span class="message-author">Assistant</span>
                 </div>
-                <div class="message-content">
-                    ${formattedContent}
-                </div>
-                <div class="message-actions">
-                    <button class="action-btn" onclick="copyMessage(this)">📋 Copy</button>
-                    <button class="action-btn" onclick="regenerateResponse(this)">🔄 Regenerate</button>
-                </div>
+                <div class="message-content"></div>
             `;
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+            return messageDiv.querySelector('.message-content');
+        }
 
-			chatMessages.appendChild(messageDiv);
-			chatMessages.scrollTop = chatMessages.scrollHeight;
-		}
+        /* ================================
+           Scroll to Bottom Smoothly
+        ================================ */
+        function scrollToBottom() {
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+        }
 
-		function formatBotResponse(text) {
-			// Convert markdown to HTML with proper formatting
-			let html = text;
+        /* ================================
+           Send Message via SSE
+        ================================ */
+function sendMessage() {
+    const message = messageInput.value.trim();
+    if (!message) return;
 
-			// Code blocks (```language\ncode\n```)
-			html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+    welcomeScreen?.remove();
+    addUserMessage(message);
 
-			// Inline code (`code`)
-			html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
 
-			// Tables (simple markdown table support)
-			html = html.replace(/\|(.+)\|\n\|[-:\s|]+\|\n((?:\|.+\|\n?)+)/g, (match, header, rows) => {
-				const headers = header.split('|').filter(h => h.trim()).map(h => `<th>${h.trim()}</th>`).join('');
-				const rowsHtml = rows.trim().split('\n').map(row => {
-					const cells = row.split('|').filter(c => c.trim()).map(c => `<td>${c.trim()}</td>`).join('');
-					return `<tr>${cells}</tr>`;
-				}).join('');
-				return `<table><thead><tr>${headers}</tr></thead><tbody>${rowsHtml}</tbody></table>`;
-			});
+    if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+    }
 
-			// Bold (**text** or __text__)
-			html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-			html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+    sendBtn.disabled = true;
 
-			// Italic (*text* or _text_)
-			html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-			html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+    const url = `/chatme?q=${encodeURIComponent(message)}&userId=${userId}`;
+    eventSource = new EventSource(url);
 
-			// Blockquotes (> text)
-			html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+    const contentDiv = addBotMessage();
+    let botText = '';
 
-			// Links [text](url)
-			html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+    // 🔹 DEFAULT DATA EVENTS
+ eventSource.onmessage = (event) => {
+    if (event.data == null) return;
 
-			// Unordered lists
-			html = html.replace(/^\* (.+)$/gm, '<li>$1</li>');
-			html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-			html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+    botText = safeAppend(botText, event.data); // <-- smart append
+    renderBotContent(contentDiv, botText);
+};
 
-			// Ordered lists
-			html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+    // 🔹 DONE EVENT (IMPORTANT)
+    eventSource.addEventListener("done", (event) => {
+        eventSource.close();
+        eventSource = null;
+        sendBtn.disabled = false;
+    });
 
-			// Horizontal rule
-			html = html.replace(/^---$/gm, '<hr>');
+    // 🔹 ERROR HANDLING
+    eventSource.onerror = () => {
+        if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+        }
 
-			// Line breaks
-			html = html.replace(/\n\n/g, '</p><p>');
-			html = '<p>' + html + '</p>';
+        sendBtn.disabled = false;
 
-			return html;
-		}
+        contentDiv.innerHTML += `
+            <p style="color:#ff6b6b; margin-top:10px;">
+                ⚠️ Server connection lost. Please try again.
+            </p>
+        `;
+    };
 
-		function showTypingIndicator() {
-			const messageDiv = document.createElement('div');
-			messageDiv.className = 'message bot';
-			messageDiv.id = 'typingIndicator';
+    // 🔹 SAFETY TIMEOUT
+    setTimeout(() => {
+        if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+            sendBtn.disabled = false;
+        }
+    }, 60000);
 
-			messageDiv.innerHTML = `
-                <div class="message-header">
-                    <div class="message-avatar">🤖</div>
-                    <span class="message-author">Assistant</span>
-                </div>
-                <div class="typing-indicator show">
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                </div>
-            `;
 
-			chatMessages.appendChild(messageDiv);
-			chatMessages.scrollTop = chatMessages.scrollHeight;
-		}
+}
+function renderBotContent(container, text) {
+    const dirtyHtml = marked.parse(text);
+    const cleanHtml = DOMPurify.sanitize(dirtyHtml);
+    container.innerHTML = cleanHtml;
 
-		function hideTypingIndicator() {
-			const indicator = document.getElementById('typingIndicator');
-			if (indicator) {
-				indicator.remove();
-			}
-		}
+    Prism.highlightAll();
+    scrollToBottom();
+}
 
-		function escapeHtml(text) {
-			const div = document.createElement('div');
-			div.textContent = text;
-			return div.innerHTML;
-		}
+function safeAppend(prev, chunk) {
+    if (!prev) return chunk;
+    // Add a space if previous chunk does not end with space/newline and current chunk does not start with space/newline
+    if (prev.endsWith(' ') || prev.endsWith('\n') || chunk.startsWith(' ') || chunk.startsWith('\n')) {
+        return prev + chunk;
+    }
+    return prev + ' ' + chunk;
+}
 
-		// Helper functions
-		window.copyMessage = function (btn) {
-			const content = btn.closest('.message').querySelector('.message-content').innerText;
-			navigator.clipboard.writeText(content).then(() => {
-				btn.textContent = '✅ Copied';
-				setTimeout(() => {
-					btn.innerHTML = '📋 Copy';
-				}, 2000);
-			});
-		};
+        /* ================================
+           Send Suggestion Button
+        ================================ */
+        function sendSuggestion(text) {
+            messageInput.value = text;
+            sendMessage();
+        }
+    </script>
 
-		window.regenerateResponse = function (btn) {
-			if (conversationHistory.length >= 2) {
-				const lastUserMessage = conversationHistory[conversationHistory.length - 2].content;
-				conversationHistory.pop();
-				conversationHistory.pop();
-				btn.closest('.message').remove();
-				messageInput.value = lastUserMessage;
-				sendMessage();
-			}
-		};
-	</script>
 </body>
 
 </html>
