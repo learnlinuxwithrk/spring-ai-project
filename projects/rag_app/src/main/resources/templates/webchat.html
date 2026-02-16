@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoMA AI Chatbot</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- Prism Theme -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.css"/>
+
+    <style>
+
+        :root {
+			--primary: #0b5ed7;       /* Official blue */
+            --secondary: #6c757d;     /* Gray accent */
+            --dark: #f8f9fa;          /* Light background */
+            --darker: #e9ecef;        /* Slightly darker background for chat */
+            --light: #212529;         /* Text color */
+            --gray: #6c757d;          /* Secondary text */
+            --border: #ced4da;        /* Borders */
+            --hover: #dee2e6;         /* Hover background */
+            --success: #198754;       /* Success messages */
+            --code-bg: #f1f3f5;       /* Code block background */
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+        .app-container {
+			display: flex;
+			height: 100vh;
+		}
+
+		/* Sidebar */
+		.sidebar {
+			width: 280px;
+			background: var(--dark);
+			border-right: 1px solid var(--border);
+			padding: 20px;
+			display: flex;
+			flex-direction: column;
+			position: fixed;
+			height: 100vh;
+			left: 0;
+			top: 0;
+			z-index: 1000;
+			transition: transform 0.3s ease;
+		}
+
+		.sidebar.hidden {
+			transform: translateX(-100%);
+		}
+
+		.logo-section {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			margin-bottom: 30px;
+			padding: 10px;
+		}
+
+		.logo-icon {
+			width: 32px;
+			height: 32px;
+			background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+			border-radius: 8px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 18px;
+		}
+
+		.logo-text h2 {
+			font-size: 16px;
+			font-weight: 600;
+			color: var(--light);
+		}
+
+		.nav-menu {
+			list-style: none;
+			flex: 1;
+		}
+
+		.nav-item {
+			margin-bottom: 4px;
+		}
+
+		.nav-link {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 10px 12px;
+			color: var(--gray);
+			text-decoration: none;
+			border-radius: 8px;
+			transition: all 0.2s;
+			font-size: 14px;
+			font-weight: 500;
+		}
+
+		.nav-link:hover {
+			background: var(--hover);
+			color: var(--light);
+		}
+
+		.nav-link.active {
+			background: var(--hover);
+			color: var(--light);
+		}
+
+		.nav-icon {
+			font-size: 18px;
+			width: 20px;
+			text-align: center;
+		}
+
+		.user-section {
+			margin-top: auto;
+			padding: 12px;
+			background: var(--hover);
+			border-radius: 8px;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.user-avatar {
+			width: 32px;
+			height: 32px;
+			background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: 600;
+			font-size: 12px;
+		}
+
+		.user-info h4 {
+			font-size: 13px;
+			font-weight: 500;
+			color: var(--light);
+		}
+
+		.user-info p {
+			font-size: 11px;
+			color: var(--gray);
+		}
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+			background: var(--darker);
+			color: var(--light);
+			overflow: hidden;
+        }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+
+        /* Floating Button */
+        #chatToggleBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            font-size: 28px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 9999;
+        }
+
+        /* Chat Box */
+        #miniChatBox {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 380px;
+            max-width: 90vw;
+            height: 500px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            overflow: hidden;
+            z-index: 9999;
+        }
+
+        /* Fullscreen */
+        #miniChatBox.fullscreen {
+            inset: 0;
+            width: 100vw !important;
+            height: 100vh !important;
+            border-radius: 0;
+        }
+
+        /* Header */
+        .chat-header {
+            background: #764ba2;
+            padding: 12px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-header button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 6px;
+        }
+
+        /* Messages */
+        #miniChatMessages {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto;
+        }
+
+        /* Typing Indicator */
+        #typingIndicator {
+            font-size: 13px;
+            opacity: 0.7;
+            padding-left: 12px;
+            padding-bottom: 6px;
+            font-style: italic;
+        }
+
+        /* Input */
+        .chat-input {
+            padding: 10px;
+            border-top: 1px solid #2d2d2d;
+            display: flex;
+            gap: 6px;
+        }
+        .chat-input textarea {
+            flex: 1;
+            background: #2d2d2d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 6px;
+            resize: none;
+        }
+        .chat-input button {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            cursor: pointer;
+        }
+
+        /* Suggestions */
+        .miniSuggestionBtn {
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid #2d2d2d;
+            background: #2d2d2d;
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+<div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="logo-section">
+            <div class="logo-icon">🤖</div>
+            <div class="logo-text">
+                <h2>MoMA AI Chatbot</h2>
+            </div>
+        </div>
+
+        <nav>
+            <ul class="nav-menu">
+                <!--	<li class="nav-item">
+                        <a href="/dashboard" class="nav-link">
+                            <span class="nav-icon">📊</span>
+                            Dashboard
+                        </a>
+                    </li> -->
+                <li class="nav-item">
+                    <a href="/upload" class="nav-link active">
+                        <span class="nav-icon">📤</span>
+                        Upload Document
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/" class="nav-link active">
+                        <span class="nav-icon">💬</span>
+                        Chat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/webchat" class="nav-link active">
+                        <span class="nav-icon">💬</span>
+                        Web Chat
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
+
+        <div class="user-section">
+            <div class="user-avatar" id="userAvatar">RK</div>
+            <div class="user-info">
+                <h4 id="userName">Rajjan Kumar</h4>
+                <p>Free plan</p>
+            </div>
+        </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Floating Button -->
+<button id="chatToggleBtn">💬</button>
+
+<!-- Chat Window -->
+<div id="miniChatBox">
+
+    <!-- Header -->
+    <div class="chat-header">
+        <span>MoMA AI</span>
+        <div>
+            <button id="minimizeBtn">➖</button>
+            <button id="fullscreenBtn">⛶</button>
+            <button id="chatCloseBtn">✖</button>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div id="miniChatMessages"></div>
+
+    <!-- Typing -->
+    <div id="typingIndicator" class="hidden">MoMA is typing…</div>
+
+    <!-- Suggestions -->
+    <div id="miniWelcomeScreen" style="padding:10px;text-align:center;">
+        <h3>How can I help?</h3>
+        <button class="miniSuggestionBtn">📝 Code</button>
+        <button class="miniSuggestionBtn">✍️ Write</button>
+        <button class="miniSuggestionBtn">🎓 Learn</button>
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input">
+        <textarea id="miniMessageInput" rows="1" placeholder="Ask me anything..."></textarea>
+        <button id="miniSendBtn">🚀</button>
+    </div>
+</div>
+
+<!-- Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-java.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-javascript.min.js"></script>
+
+<script>
+    (() => {
+        const chatToggleBtn = document.getElementById('chatToggleBtn');
+        const miniChatBox = document.getElementById('miniChatBox');
+        const chatCloseBtn = document.getElementById('chatCloseBtn');
+        const minimizeBtn = document.getElementById('minimizeBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const miniChatMessages = document.getElementById('miniChatMessages');
+        const miniMessageInput = document.getElementById('miniMessageInput');
+        const miniSendBtn = document.getElementById('miniSendBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const miniWelcomeScreen = document.getElementById('miniWelcomeScreen');
+
+        let userId = localStorage.getItem("userId") || crypto.randomUUID();
+        localStorage.setItem("userId", userId);
+
+        let eventSource = null;
+
+        /* Restore history */
+        const history = localStorage.getItem('momaHistory');
+        if (history) {
+            miniChatMessages.innerHTML = history;
+            miniWelcomeScreen.style.display = 'none';
+        }
+
+        const saveHistory = () =>
+            localStorage.setItem('momaHistory', miniChatMessages.innerHTML);
+
+        /* Toggle */
+        chatToggleBtn.onclick = () => {
+            miniChatBox.style.display = 'flex';
+            chatToggleBtn.classList.add('hidden');
+        };
+        chatCloseBtn.onclick = minimizeBtn.onclick = () => {
+            miniChatBox.style.display = 'none';
+            chatToggleBtn.classList.remove('hidden');
+        };
+        fullscreenBtn.onclick = () =>
+            miniChatBox.classList.toggle('fullscreen');
+
+        /* Send */
+        miniSendBtn.onclick = send;
+        miniMessageInput.onkeydown = e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); send();
+            }
+        };
+
+        document.querySelectorAll('.miniSuggestionBtn').forEach(btn =>
+            btn.onclick = () => { miniMessageInput.value = btn.innerText; send(); }
+        );
+
+function formatStructuredResponse(text) {
+    if (text.includes(':') && text.split(':').length > 2) {
+        const parts = text.split(/(?=\w+\s*:)/g);
+        return parts.map(p => "- " + p.trim()).join("\n");
+    }
+    return text;
+}
+        function send() {
+            const msg = miniMessageInput.value.trim();
+            if (!msg) return;
+
+            miniWelcomeScreen.style.display = 'none';
+            miniChatMessages.innerHTML += `<div><b>You:</b><div>${escape(msg)}</div></div>`;
+            miniMessageInput.value = '';
+            saveHistory();
+
+            const botDiv = document.createElement('div');
+            botDiv.innerHTML = `<b>MoMA:</b><div></div>`;
+            miniChatMessages.appendChild(botDiv);
+            const botContent = botDiv.querySelector('div');
+
+            typingIndicator.classList.remove('hidden');
+
+            if (eventSource) eventSource.close();
+            eventSource = new EventSource(`/chatme?q=${encodeURIComponent(msg)}&userId=${userId}`);
+
+            let text = '';
+            eventSource.onmessage = e => {
+                typingIndicator.classList.add('hidden');
+                text += e.data;
+                const formatted = formatStructuredResponse(text);
+                botContent.innerHTML = DOMPurify.sanitize(marked.parse(formatted));
+                Prism.highlightAll();
+                saveHistory();
+            };
+
+            eventSource.onerror = () => {
+                typingIndicator.classList.add('hidden');
+                eventSource.close();
+            };
+        }
+
+        const escape = t => {
+            const d = document.createElement('div');
+            d.textContent = t;
+            return d.innerHTML;
+        };
+    })();
+</script>
+
+</body>
+</html>

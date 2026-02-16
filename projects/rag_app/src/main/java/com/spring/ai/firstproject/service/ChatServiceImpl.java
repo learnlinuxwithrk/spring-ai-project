@@ -146,7 +146,7 @@ public class ChatServiceImpl implements ChatService {
     	        .documentRetriever(
     	                VectorStoreDocumentRetriever.builder()
     	                        .vectorStore(vectorStore)
-    	                        .topK(3)
+    	                        .topK(1000)
     	                        .similarityThreshold(0.15)
     	                        .build()
     	        )
@@ -172,18 +172,28 @@ public class ChatServiceImpl implements ChatService {
     public Flux<String> streamResponse(String userQuery, String userId) {
         var advisor = buildAdvisor(userId);
 
-        return Mono.fromCallable(() -> {
-                    // This is blocking, so we execute on boundedElastic
-                    return chatClient
-                            .prompt()
-                            .advisors(advisor)
-                            .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, userId))
-                            .user(userQuery)
-                            .call()    // blocking
-                            .content();
-                })
-                .subscribeOn(Schedulers.boundedElastic()) // move to a thread that allows blocking
-                .flux(); // convert Mono<String> to Flux<String> for SSE
+        return chatClient
+                .prompt()
+                .advisors(advisor)
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, userId))
+                .user(userQuery)
+                .stream()
+                .content()
+                .bufferTimeout(25, Duration.ofMillis(200)) // buffer tokens
+                .map(chunks -> String.join("", chunks))    // join safely
+                .filter(s -> !s.isBlank());
+//        return Mono.fromCallable(() -> {
+//                    // This is blocking, so we execute on boundedElastic
+//                    return chatClient
+//                            .prompt()
+//                            .advisors(advisor)
+//                            .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, userId))
+//                            .user(userQuery)
+//                            .call()    // blocking
+//                            .content();
+//                })
+//                .subscribeOn(Schedulers.boundedElastic()) // move to a thread that allows blocking
+//                .flux(); // convert Mono<String> to Flux<String> for SSE
     }
 
 
@@ -208,24 +218,30 @@ public class ChatServiceImpl implements ChatService {
                 .queryTransformers(
                         RewriteQueryTransformer.builder()
                                 .chatClientBuilder(chatClient.mutate().clone())
+                                .build(),
+                        TranslationQueryTransformer.builder()
+                                .chatClientBuilder(chatClient.mutate())
+                                .targetLanguage("hindi")
                                 .build()
+
                 )
+
                 .queryExpander(MultiQueryExpander.builder()
                         .chatClientBuilder(chatClient.mutate()) // just mutate, no clone
-                        .numberOfQueries(10)
-                        .includeOriginal(false)
+                        .numberOfQueries(1) // example: 3 expansions
+                        .includeOriginal(true)
                         .build())
 
                 .documentRetriever(
                         VectorStoreDocumentRetriever.builder()
                                 .vectorStore(vectorStore)
-                                .topK(50)
+                                .topK(500)
                                 .similarityThreshold(0.15)
                                 .build()
                 )
                 .documentJoiner(new ConcatenationDocumentJoiner())
                 .queryAugmenter(ContextualQueryAugmenter.builder().build())
-                .documentPostProcessors()
+                //.documentPostProcessors()
                 .build();
     }
 

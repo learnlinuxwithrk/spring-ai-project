@@ -22,10 +22,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class DataLoaderImpl implements DataLoader {
@@ -247,8 +244,11 @@ public class DataLoaderImpl implements DataLoader {
 
         Document doc = new Document(text);
 
-        doc.getMetadata().put("source", "uploaded-text");
+      //  doc.getMetadata().put("source", filePath.getFileName().toString());
+      //  doc.getMetadata().put("filename", filePath.getFileName().toString());
+        doc.getMetadata().put("source", "text"); // or filePath.getFileName().toString()
         doc.getMetadata().put("filename", filePath.getFileName().toString());
+        doc.getMetadata().put("doc_id", UUID.randomUUID().toString());
 
         return List.of(doc);
     }
@@ -320,9 +320,13 @@ public class DataLoaderImpl implements DataLoader {
 
             Map<String, Object> metadata = new HashMap<>();
 
-            metadata.put("source", "uploaded-pdf");
+            metadata.put("source", "pdf"); // or filePath.getFileName().toString()
             metadata.put("filename", filePath.getFileName().toString());
             metadata.put("page_number", pageNumber++);
+            metadata.put("doc_id", UUID.randomUUID().toString());
+//            metadata.put("source", "uploaded-pdf");
+//            metadata.put("filename", filePath.getFileName().toString());
+//            metadata.put("page_number", pageNumber++);
 
             Document cleanDoc = new Document(text, metadata);
 

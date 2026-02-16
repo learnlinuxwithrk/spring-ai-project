@@ -10,3 +10,5 @@ build/
 .settings/
 .classpath
 .project
+# Uploaded documents (runtime data)
+projects/rag_app/uploads/

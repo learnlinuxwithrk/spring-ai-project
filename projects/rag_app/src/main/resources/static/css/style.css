@@ -1,13 +1,14 @@
 :root {
-	--primary: #FFA07A;
-	--secondary: #764ba2;
-	--dark: #1a1a2e;
-	--darker: #1a1a2e;
-	--light: #ffffff;
-	--gray: #a0a0b0;
-	--success: #10b981;
-	--warning: #f59e0b;
-	--danger: #ef4444;
+            --primary: #0b5ed7;       /* Official blue */
+            --secondary: #6c757d;     /* Gray accent */
+            --dark: #f8f9fa;          /* Light background */
+            --darker: #e9ecef;        /* Slightly darker background for chat */
+            --light: #212529;         /* Text color */
+            --gray: #6c757d;          /* Secondary text */
+            --border: #ced4da;        /* Borders */
+            --hover: #dee2e6;         /* Hover background */
+            --success: #198754;       /* Success messages */
+            --code-bg: #f1f3f5;       /* Code block background */
 }
 
 * {

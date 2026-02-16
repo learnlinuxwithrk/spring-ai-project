@@ -1,6 +1,9 @@
 package com.spring.ai.firstproject;
 
 import com.spring.ai.firstproject.helper.Helper;
+import com.spring.ai.firstproject.helper.Pmjvk;
+import com.spring.ai.firstproject.helper.Umeed;
+import com.spring.ai.firstproject.helper.pmvikas;
 import com.spring.ai.firstproject.service.ChatService;
 import com.spring.ai.firstproject.service.DataLoader;
 import com.spring.ai.firstproject.service.DataTransformer;
@@ -31,21 +34,24 @@ class FirstProjectApplicationTests {
 	@Autowired
 	private VectorStore vectorStore;
 
-    @Test
-    void saveDataToVectorDatabase(){
-        System.out.println("saving data to database");
-        this.chatService.saveData(Helper.getData());
-        System.out.println("data is saved successfully");
-    }
-//    
+//   @Test
+//   void saveDataToVectorDatabase(){
+//       System.out.println("saving data to database");
+//   //  this.chatService.saveData(Helper.getData());
+//     // this.chatService.saveData(Pmjvk.getData());
+//    //  this.chatService.saveData(pmvikas.getData());
+//        //this.chatService.saveData(Umeed.getData());
+//        System.out.println("data is saved successfully");
+//  }
 
+//
 //	@Test
 //	void testDataLoader() {
 //
 //
 //
 //		//Import JSON File
-//		//var documents = dataLoader.ingestJsonIntoVectorStore(vectorStore);
+//		var documents = dataLoader.ingestJsonIntoVectorStore(vectorStore);
 //
 //		//import PDF Docs
 //		//var documents = dataLoader.ingestPdfIntoVectorStore(vectorStore);

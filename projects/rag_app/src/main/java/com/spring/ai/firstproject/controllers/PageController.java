@@ -16,4 +16,9 @@ public class PageController {
     public String uploadPage() {
         return "upload-enhanced";
     }
+
+    @GetMapping("/webchat")
+    public String webChat() {
+        return "webchat";
+    }
 }
