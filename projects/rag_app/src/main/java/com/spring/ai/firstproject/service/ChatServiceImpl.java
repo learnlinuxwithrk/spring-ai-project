@@ -146,13 +146,13 @@ public class ChatServiceImpl implements ChatService {
     	        .documentRetriever(
     	                VectorStoreDocumentRetriever.builder()
     	                        .vectorStore(vectorStore)
-    	                        .topK(1000)
-    	                        .similarityThreshold(0.15)
+    	                        .topK(3)
+    	                        .similarityThreshold(0.5)
     	                        .build()
     	        )
     	        .documentJoiner(new ConcatenationDocumentJoiner())
     	        .queryAugmenter(ContextualQueryAugmenter.builder().build())
-    	        .documentPostProcessors()
+    	       // .documentPostProcessors()
     	        .build();
 
     	 // 2️⃣ Chat Memory Advisor
@@ -218,7 +218,7 @@ public class ChatServiceImpl implements ChatService {
                 .queryTransformers(
                         RewriteQueryTransformer.builder()
                                 .chatClientBuilder(chatClient.mutate().clone())
-                                .build(),
+                            .build(),
                         TranslationQueryTransformer.builder()
                                 .chatClientBuilder(chatClient.mutate())
                                 .targetLanguage("hindi")
@@ -228,14 +228,14 @@ public class ChatServiceImpl implements ChatService {
 
                 .queryExpander(MultiQueryExpander.builder()
                         .chatClientBuilder(chatClient.mutate()) // just mutate, no clone
-                        .numberOfQueries(1) // example: 3 expansions
+                        .numberOfQueries(2) // example: 3 expansions
                         .includeOriginal(true)
                         .build())
 
                 .documentRetriever(
                         VectorStoreDocumentRetriever.builder()
                                 .vectorStore(vectorStore)
-                                .topK(500)
+                                .topK(30)
                                 .similarityThreshold(0.15)
                                 .build()
                 )

@@ -285,6 +285,8 @@
         }
     </style>
 </head>
+
+
 <body>
     <div class="container">
         <h1>📄 Document Upload</h1>
@@ -495,6 +497,18 @@
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
         }
+
+
     </script>
+    <script
+            src="/js/moma-chatbot-widget.js"
+            data-api="/chatme"
+            data-upload="/doupload"
+            data-title="MoMA AI Assistant"
+            data-subtitle="Ministry of Minority Affairs"
+            data-color="#1e40af"
+            data-accent="#f59e0b"
+            data-position="right"
+    ></script>
 </body>
 </html>

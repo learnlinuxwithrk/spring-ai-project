@@ -45,27 +45,27 @@ class FirstProjectApplicationTests {
 //  }
 
 //
-//	@Test
-//	void testDataLoader() {
+	@Test
+	void testDataLoader() {
+
+
+
+		//Import JSON File
+		var documents = dataLoader.ingestJsonIntoVectorStore(vectorStore);
+
+		//import PDF Docs
+		//var documents = dataLoader.ingestPdfIntoVectorStore(vectorStore);
+
+		//System.out.println("JSON COUNT " + docCount);
+//        var documents = dataLoader.loadDocumentsFromJson();
+        //System.out.println("Document Size : "+documents.size());
 //
+        documents.forEach(item -> {
+            System.out.println("ITEM "+item);
+        });
 //
-//
-//		//Import JSON File
-//		var documents = dataLoader.ingestJsonIntoVectorStore(vectorStore);
-//
-//		//import PDF Docs
-//		//var documents = dataLoader.ingestPdfIntoVectorStore(vectorStore);
-//
-//		//System.out.println("JSON COUNT " + docCount);
-////        var documents = dataLoader.loadDocumentsFromJson();
-//        //System.out.println("Document Size : "+documents.size());
-////
-//        documents.forEach(item -> {
-//            System.out.println("ITEM "+item);
-//        });
-////
-//
-//	}
+
+	}
 
 //    @Test
 //    void testPdfDataLoader() {

@@ -21,4 +21,9 @@ public class PageController {
     public String webChat() {
         return "webchat";
     }
+
+    @GetMapping("/dashboard")
+    public String webChatDashboard() {
+        return "upload";
+    }
 }
