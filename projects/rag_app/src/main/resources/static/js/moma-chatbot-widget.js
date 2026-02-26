@@ -171,50 +171,63 @@
     /* Messages */
     .mw-msg{margin-bottom:13px;animation:mwMsg .22s ease;}
     @keyframes mwMsg{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-    .mw-meta{
-      display:flex;
-      align-items:right;
-      gap:6px;
-      font-size:11px;
-      font-weight:600;
-      color:#1e293b;
-      margin-bottom:4px;
-    }
+ .mw-meta {
+   display: flex;
+   justify-content: flex-end;   /* align items to the right */
+   gap: 6px;
+   font-size: 11px;
+   font-weight: 600;
+   color: #1e293b;
+   margin-bottom: 4px;
+   margin-top: 10px;
+ }
     .mw-msg.mw-u .mw-meta{justify-content:flex-end;}
     .mw-mt{font-size:10px;color:#94a3b8;font-weight:400;}
-    .mw-row{display:flex;align-items:flex-start;gap:8px;}
+    .mw-row{
+    //display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:50px;
+    }
     .mw-av{
-      width:26px;height:26px;border-radius:50%;flex-shrink:0;
-      display:flex;align-items:center;justify-content:center;
-      font-size:10px;font-weight:700;color:#fff;margin-top:2px;
+      width:26px;
+      height:26px;
+      border-radius:50%;
+      flex-shrink:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:10px;
+      font-weight:700;
+      color:#fff;
+      margin-top:10px;
     }
     .mw-msg.mw-b .mw-av{background:linear-gradient(135deg,${C.color},${C.color}99);}
     .mw-msg.mw-u .mw-av{background:linear-gradient(135deg,${C.accent},${C.accent}cc);order:2;}
-    .mw-bbl{
-    font-size: 13px;
-    line-height: 1.6;
-    color: var(--text-primary);
-    background: var(--bg-primary);
-    display:flex;align-items:right;
-    justify-content:right;
-    padding: 10px 12px;
-    border-radius: 12px;
-//    border: 1px solid var(--border);
-    max-width: calc(100% - 10px);
-//      font-size:13px;
-//      line-height:1.65;
-//      color:#1e293b;
-//      padding:10px 12px;
-//      border-radius:12px;
-//      max-width:calc(100% - 34px);
-    }
+  .mw-bbl{
+    font-size:13px;
+    line-height:1.6;
+    color:#1e293b;
+    background:var(--bg-primary);
+    text-align:left;
+    padding:10px 12px;
+    border-radius:6px;
+    border:1px solid var(--border);
+    max-width:calc(100% - 50px);
+
+    /* enhancements */
+    word-wrap:break-word;
+    overflow-wrap:anywhere;
+    white-space:pre-wrap;
+  }
     .mw-msg.mw-b .mw-bbl{
       background:#fff;border:1px solid #e2e8f0;
-      border-left:3px solid ${C.color};margin-left:34px;
+     border-left:1px ${C.color};margin-left:30px;
     }
     .mw-msg.mw-u .mw-bbl{
       background:linear-gradient(135deg,${C.color},${C.color}cc);
-      color:#fff;border:none;margin-left:auto;margin-right:34px;
+      color:#fff;
+      border:none;margin-left:auto;margin-right:30px;
     }
     .mw-bbl p{margin:0 0 6px;}.mw-bbl p:last-child{margin:0;}
     .mw-bbl ul,.mw-bbl ol{padding-left:18px;margin:5px 0;}
@@ -577,21 +590,28 @@
 
   function rmWel(){if(wel&&wel.parentNode)wel.remove();}
 
-  function addU(txt){
-    rmWel();
-    const d=document.createElement('div');
-    d.className='mw-msg mw-u';
-    d.innerHTML=`<div class="mw-meta"><span>You</span><span class="mw-mt">${now()}</span></div>
-      <div class="mw-bbl">${esc(txt)}</div>`;
-    body.insertBefore(d,typ);scrl();
-  }
+function addU(txt){
+  rmWel();
+  const d = document.createElement('div');
+  d.className = 'mw-msg mw-u';
+
+  d.innerHTML = `
+    <div class="mw-meta">
+      <span>You</span>
+      <span class="mw-mt">${now()}</span>
+    </div>
+    <div class="mw-bbl">${esc(txt)}</div>
+  `;
+
+  body.insertBefore(d, typ);
+  scrl();
+}
 
   function mkBot(){
     rmWel();
     const d=document.createElement('div');
     d.className='mw-msg mw-b';
     d.innerHTML=`<div class="mw-row">
-      <div class="mw-av">AI</div>
       <div style="flex:1;min-width:0">
         <div class="mw-meta"><span>AI Assistant</span><span class="mw-mt">${now()}</span></div>
         <div class="mw-bbl"></div>

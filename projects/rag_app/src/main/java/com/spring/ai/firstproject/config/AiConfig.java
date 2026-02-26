@@ -1,5 +1,4 @@
 package com.spring.ai.firstproject.config;
-import org.springframework.ai.chat.memory.ChatMemory;
 
 
 import org.slf4j.Logger;
@@ -52,7 +51,7 @@ public class AiConfig {
     public ChatMemory chatMemory(JdbcChatMemoryRepository jdbcChatMemoryRepository){
         return MessageWindowChatMemory.builder()
                 .chatMemoryRepository(jdbcChatMemoryRepository)
-                .maxMessages(10)
+                .maxMessages(2)
                 .build();
 
     }
